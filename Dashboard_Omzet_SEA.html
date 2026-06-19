@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Omzet — SEA</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #FBF8F2;
+    --panel: #FFFFFF;
+    --panel-2: #F3EEE3;
+    --line: #E6DFD0;
+    --ink: #3A3530;
+    --ink-dim: #837A6D;
+    --ink-faint: #B3A993;
+    --gold: #C99A5B;
+    --gold-dim: #DDBE8C;
+    --green: #7CA582;
+    --green-bg: #E7EFE6;
+    --red: #C97A6B;
+    --red-bg: #F6E8E4;
+    --blue: #7B96A8;
+    --mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans); }
+
+  body{
+    background-image:
+      radial-gradient(ellipse at top right, rgba(143,174,146,0.10), transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(208,139,125,0.06), transparent 55%);
+  }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:36px 28px 80px; }
+
+  /* ---------- HEADER ---------- */
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:28px;
+    gap:20px; flex-wrap:wrap;
+  }
+  .masthead-left .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 8px;
+  }
+  .masthead-left h1{
+    font-family:var(--serif); font-weight:600; font-size:34px; margin:0; letter-spacing:-0.01em;
+  }
+  .masthead-left .sub{ color:var(--ink-dim); font-size:13.5px; margin-top:6px; }
+  .masthead-right{ text-align:right; font-family:var(--mono); font-size:12px; color:var(--ink-faint); }
+  .masthead-right .asof{ color:var(--ink-dim); font-size:13px; margin-bottom:4px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    border:1px solid var(--line); border-radius:100px; padding:4px 12px;
+    font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin-top:8px;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; background:var(--green); }
+
+  /* ---------- NAV TABS ---------- */
+  .nav-tabs{ display:flex; gap:4px; margin-bottom:32px; border-bottom:1px solid var(--line); }
+  .nav-tab{
+    font-family:var(--mono); font-size:12px; padding:10px 18px; border:none; background:transparent;
+    color:var(--ink-faint); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+    transition:all .15s;
+  }
+  .nav-tab.active{ color:var(--ink); border-bottom-color:var(--gold); font-weight:600; }
+  .nav-tab:hover{ color:var(--ink); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* ---------- KPI ROW ---------- */
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:28px; }
+  .kpi{ background:var(--panel); padding:22px 22px; position:relative; }
+  .kpi .label{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:10px; }
+  .kpi .value{ font-family:var(--serif); font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.1; }
+  .kpi .delta{ font-family:var(--mono); font-size:11.5px; margin-top:8px; }
+  .delta.up{ color:var(--green); } .delta.down{ color:var(--red); } .delta.flat{ color:var(--ink-faint); }
+  .kpi.accent{ background:linear-gradient(135deg, rgba(201,154,91,0.10), transparent); }
+  .kpi.accent .value{ color:var(--gold); }
+
+  /* ---------- ACHIEVEMENT BADGE ---------- */
+  .achv-badge{
+    display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:100px;
+    font-family:var(--mono); font-size:11px; font-weight:600;
+  }
+  .achv-badge.good{ background:var(--green-bg); color:#4F7A56; }
+  .achv-badge.warn{ background:#FBF1DD; color:#A87A28; }
+  .achv-badge.bad{ background:var(--red-bg); color:#A8493A; }
+
+  /* ---------- SECTION ---------- */
+  .section{ margin-bottom:36px; }
+  .section-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .section-head h2{ font-family:var(--serif); font-size:19px; font-weight:600; margin:0; }
+  .section-head .note{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:24px; box-shadow:0 2px 14px rgba(58,53,48,0.05); }
+
+  /* ---------- CHART ---------- */
+  .chart-tabs{ display:flex; gap:4px; }
+
+  /* ---------- DATE FILTER BAR ---------- */
+  .filter-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:14px 18px; margin-bottom:24px; box-shadow:0 2px 14px rgba(58,53,48,0.05);
+  }
+  .filter-bar-label{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; }
+  .date-input{
+    font-family:var(--mono); font-size:12.5px; padding:6px 10px; border:1px solid var(--line);
+    border-radius:6px; background:var(--panel-2); color:var(--ink);
+  }
+  .date-input:focus{ outline:none; border-color:var(--gold); }
+  .filter-sep{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+  .filter-presets{ display:flex; gap:4px; margin-left:auto; }
+  .preset-btn{
+    font-family:var(--mono); font-size:11px; padding:6px 13px; border-radius:100px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; transition:all .15s;
+  }
+  .preset-btn.active{ background:var(--gold); color:#fff; border-color:var(--gold); }
+  .preset-btn:hover{ border-color:var(--gold); }
+  @media (max-width:760px){ .filter-presets{ margin-left:0; width:100%; } }
+  .chart-tab{
+    font-family:var(--mono); font-size:11px; padding:5px 12px; border-radius:100px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-faint); cursor:pointer;
+    transition:all .15s;
+  }
+  .chart-tab.active{ background:var(--gold); color:#fff; border-color:var(--gold); }
+  .chart-wrap{ height:300px; position:relative; }
+  .chart-wrap.tall{ height:340px; }
+
+  .legend-row{ display:flex; gap:18px; margin-bottom:14px; font-family:var(--mono); font-size:11px; color:var(--ink-dim); }
+  .legend-item{ display:flex; align-items:center; gap:6px; }
+  .legend-swatch{ width:12px; height:12px; border-radius:3px; }
+
+  /* ---------- TABLE ---------- */
+  table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; }
+  thead th{
+    text-align:right; font-size:10px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:500; padding:0 0 10px; border-bottom:1px solid var(--line);
+  }
+  thead th:first-child, tbody td:first-child{ text-align:left; }
+  tbody td{ padding:10px 0; border-bottom:1px solid rgba(58,53,48,0.05); text-align:right; color:var(--ink); }
+  tbody tr:hover td{ background:rgba(201,154,91,0.04); }
+  tbody td:first-child{ font-family:var(--sans); color:var(--ink); font-weight:500; }
+  tbody tr.empty td{ color:var(--ink-faint); }
+  tbody tr.future td{ color:var(--ink-faint); font-style:italic; }
+  .variance-cell{ font-weight:600; }
+  .variance-cell.pos{ color:var(--green); }
+  .variance-cell.neg{ color:var(--red); }
+  tfoot td{ padding-top:14px; border-top:2px solid var(--line); font-weight:700; color:var(--ink); }
+  tfoot .variance-cell.pos{ color:var(--green); } tfoot .variance-cell.neg{ color:var(--red); }
+
+  /* ---------- CALENDAR HEATMAP ---------- */
+  .cal-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; }
+  .cal-month-label{ font-family:var(--mono); font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; margin:18px 0 8px; }
+  .cal-day{
+    aspect-ratio:1; border-radius:3px; background:var(--panel-2); position:relative; cursor:default;
+    border:1px solid rgba(58,53,48,0.03);
+  }
+  .cal-day[data-level="0"]{ background:var(--panel-2); }
+  .cal-day[data-level="1"]{ background:rgba(201,154,91,0.20); }
+  .cal-day[data-level="2"]{ background:rgba(201,154,91,0.42); }
+  .cal-day[data-level="3"]{ background:rgba(201,154,91,0.65); }
+  .cal-day[data-level="4"]{ background:rgba(201,154,91,0.85); }
+  .cal-day[data-future="1"]{ background:transparent; border:1px dashed rgba(58,53,48,0.10); }
+  .cal-day:hover::after{
+    content: attr(data-tip); position:absolute; bottom:120%; left:50%; transform:translateX(-50%);
+    background:#3A3530; color:#FBF8F2; font-family:var(--mono); font-size:10.5px; padding:5px 8px;
+    border-radius:3px; white-space:nowrap; z-index:10; border:1px solid var(--line); pointer-events:none;
+  }
+  .cal-legend{ display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:14px; justify-content:flex-end; }
+  .cal-legend .sq{ width:11px; height:11px; border-radius:2px; }
+
+  /* ---------- INSIGHT STRIP ---------- */
+  .insight-strip{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .insight{ background:var(--panel); padding:18px 20px; }
+  .insight .tag{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--gold); margin-bottom:8px; }
+  .insight .txt{ font-size:13.5px; color:var(--ink-dim); line-height:1.5; }
+  .insight .txt b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- NOTICE ---------- */
+  .notice{
+    border:1px dashed var(--gold-dim); border-radius:4px; padding:16px 20px;
+    font-size:13px; color:var(--ink-dim); background:rgba(201,154,91,0.06);
+    display:flex; gap:12px; align-items:flex-start; margin-bottom:32px;
+  }
+  .notice .ic{ font-family:var(--serif); font-size:18px; color:var(--gold); flex-shrink:0; }
+
+  footer{ text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:40px; padding-top:20px; border-top:1px solid var(--line); }
+
+  @media (max-width:760px){
+    .kpi-row{ grid-template-columns:repeat(2,1fr); }
+    .insight-strip{ grid-template-columns:1fr; }
+    .masthead{ flex-direction:column; align-items:flex-start; }
+    .masthead-right{ text-align:left; }
+    table{ font-size:11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="masthead-left">
+      <p class="eyebrow">Syaamil Group · Financial Planning &amp; Analysis</p>
+      <h1>Omzet — Entitas SEA</h1>
+      <p class="sub">Budget vs Realisasi pendapatan, diskon, dan gross profit tahun anggaran 2026</p>
+    </div>
+    <div class="masthead-right">
+      <div class="asof">Data per <span id="asOfDate" style="color:var(--gold)">12 Jun 2026</span></div>
+      <div>Sumber: SEA Cash Management Report</div>
+      <div class="pill"><span class="dot"></span> 107 hari transaksi tercatat</div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-view="bvr">Budget vs Realisasi</button>
+    <button class="nav-tab" data-view="real">Detail Realisasi</button>
+    <button class="nav-tab" data-view="saldo">Data Saldo</button>
+    <button class="nav-tab" data-view="cashflow">Data Cash Flow</button>
+  </div>
+
+  <!-- ============ VIEW 1: BUDGET VS REALISASI ============ -->
+  <div class="view active" id="view-bvr">
+
+    <div class="kpi-row" id="kpiRowBvr"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Pendapatan Bruto — Budget vs Realisasi per Bulan</h2>
+        <span class="note">batang = nilai · garis = % achievement</span>
+      </div>
+      <div class="panel">
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--gold-dim)"></span>Budget</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span>Realisasi</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--red); border-radius:50%; width:8px;height:8px;"></span>% Achievement</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="bvrChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Tabel Variance Bulanan</h2>
+        <span class="note">Realisasi − Budget (prorata hari berjalan)</span>
+      </div>
+      <div class="panel" style="overflow-x:auto;">
+        <table id="varianceTable">
+          <thead>
+            <tr>
+              <th>Bulan</th>
+              <th>Budget Bruto</th>
+              <th>Realisasi Bruto</th>
+              <th>Variance</th>
+              <th>Achievement</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="varianceBody"></tbody>
+          <tfoot>
+            <tr>
+              <td>Total YTD</td>
+              <td id="ftBudget"></td>
+              <td id="ftReal"></td>
+              <td id="ftVariance"></td>
+              <td id="ftAchv"></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Catatan Analisis</h2></div>
+      <div class="insight-strip" id="insightStripBvr"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW 2: DETAIL REALISASI ============ -->
+  <div class="view" id="view-real">
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Tren Pendapatan Netto Harian</h2>
+        <div class="chart-tabs">
+          <button class="chart-tab active" data-range="all">Full Year</button>
+          <button class="chart-tab" data-range="ytd">YTD (s.d Jun)</button>
+          <button class="chart-tab" data-range="90">90 Hari Terakhir</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Rekap Bulanan</h2>
+        <span class="note">dalam Rupiah</span>
+      </div>
+      <div class="panel" style="overflow-x:auto;">
+        <table id="monthlyTable">
+          <thead>
+            <tr>
+              <th>Bulan</th>
+              <th>Hari Aktif</th>
+              <th>Pendapatan Bruto</th>
+              <th>Diskon</th>
+              <th>Pendapatan Netto</th>
+              <th>Cost</th>
+              <th>Gross Profit</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyBody"></tbody>
+          <tfoot>
+            <tr>
+              <td>Total YTD</td>
+              <td id="ftDays"></td>
+              <td id="ftBruto"></td>
+              <td id="ftDiskon"></td>
+              <td id="ftNetto"></td>
+              <td id="ftCost"></td>
+              <td id="ftGp"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Kalender Aktivitas Penjualan</h2>
+        <span class="note">intensitas = besaran pendapatan netto harian</span>
+      </div>
+      <div class="panel">
+        <div id="calendarContainer"></div>
+        <div class="cal-legend">
+          <span>Sepi</span>
+          <span class="sq" style="background:var(--panel-2)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.20)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.42)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.65)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.85)"></span>
+          <span>Ramai</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Catatan Analisis</h2></div>
+      <div class="insight-strip" id="insightStrip"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW 3: DATA SALDO ============ -->
+  <div class="view" id="view-saldo">
+
+    <div class="filter-bar">
+      <div class="filter-bar-label">Filter Tanggal:</div>
+      <input type="date" id="saldoDateFrom" class="date-input">
+      <span class="filter-sep">s.d</span>
+      <input type="date" id="saldoDateTo" class="date-input">
+      <div class="filter-presets">
+        <button class="preset-btn" data-preset="all">Semua</button>
+        <button class="preset-btn" data-preset="30">30 Hari</button>
+        <button class="preset-btn" data-preset="90">90 Hari</button>
+        <button class="preset-btn" data-preset="ytd">YTD</button>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpiRowSaldo"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Cash In &amp; Cash Out per Bulan</h2>
+        <span class="note">Debit = Cash In · Kredit = Cash Out</span>
+      </div>
+      <div class="panel">
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span>Cash In (Debit)</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--red)"></span>Cash Out (Kredit)</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="saldoMonthlyChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Tren Saldo Akhir Harian</h2>
+        <span class="note">mengikuti filter tanggal aktif</span>
+      </div>
+      <div class="panel"><div class="chart-wrap"><canvas id="saldoDailyChart"></canvas></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Cash In &amp; Out per Bulan</h2>
+        <span class="note">rekap bulanan</span>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-scroll" style="max-height:420px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Bulan</th>
+                <th>Cash In (Debit)</th>
+                <th>Cash Out (Kredit)</th>
+                <th>Net</th>
+                <th>Saldo Akhir</th>
+                <th>Hari Aktif</th>
+              </tr>
+            </thead>
+            <tbody id="saldoMonthlyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Cash In &amp; Out per Hari</h2>
+        <span class="note" id="saldoDailyCount"></span>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Saldo Awal</th>
+                <th>Cash In (Debit)</th>
+                <th>Cash Out (Kredit)</th>
+                <th>Saldo Akhir</th>
+              </tr>
+            </thead>
+            <tbody id="saldoDailyBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" style="padding:12px 16px;">
+          <span id="saldoPageInfo"></span>
+          <div class="pg-controls">
+            <button id="saldoPgPrev">← Prev</button>
+            <span id="saldoPageLabel"></span>
+            <button id="saldoPgNext">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Catatan Analisis</h2></div>
+      <div class="insight-strip" id="insightStripSaldo"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW 4: DATA CASH FLOW ============ -->
+  <div class="view" id="view-cashflow">
+
+    <div class="kpi-row" id="kpiRowCashflow"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Cash Flow per Aktivitas per Bulan</h2>
+        <span class="note">Operasional · Investasi · Pendanaan</span>
+      </div>
+      <div class="panel">
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-swatch" style="background:#7B96A8"></span>Operasional</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#C99A5B"></span>Investasi</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#C97A6B"></span>Pendanaan</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#3A3530; border-radius:50%; width:8px; height:8px;"></span>Net Change</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="cashflowActivityChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Resume Aktivitas Operasional</h2>
+        <span class="note">Cash in &amp; Cash out dari kegiatan usaha utama</span>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-scroll" style="max-height:380px;">
+          <table id="cfOperasionalTable">
+            <thead><tr id="cfOperasionalHead"></tr></thead>
+            <tbody id="cfOperasionalBody"></tbody>
+            <tfoot><tr id="cfOperasionalFoot"></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Resume Aktivitas Investasi</h2>
+        <span class="note">Jual/beli aset tetap &amp; tidak berwujud, investasi saham</span>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-scroll" style="max-height:380px;">
+          <table id="cfInvestasiTable">
+            <thead><tr id="cfInvestasiHead"></tr></thead>
+            <tbody id="cfInvestasiBody"></tbody>
+            <tfoot><tr id="cfInvestasiFoot"></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Resume Aktivitas Pendanaan</h2>
+        <span class="note">Pinjaman, pembayaran investor/pemegang saham/bank</span>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-scroll" style="max-height:380px;">
+          <table id="cfPendanaanTable">
+            <thead><tr id="cfPendanaanHead"></tr></thead>
+            <tbody id="cfPendanaanBody"></tbody>
+            <tfoot><tr id="cfPendanaanFoot"></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Rekonsiliasi Saldo Kas</h2>
+        <span class="note">Saldo Awal + Net Change = Saldo Akhir</span>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-scroll" style="max-height:380px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Bulan</th>
+                <th>Saldo Awal</th>
+                <th>Operasional</th>
+                <th>Investasi</th>
+                <th>Pendanaan</th>
+                <th>Net Change</th>
+                <th>Saldo Akhir</th>
+              </tr>
+            </thead>
+            <tbody id="cfReconBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Catatan Analisis</h2></div>
+      <div class="insight-strip" id="insightStripCashflow"></div>
+    </div>
+  </div>
+
+  <footer>Dashboard dibuat otomatis dari data Budget &amp; Realisasi Omzet · Syaamil Group FP&amp;A</footer>
+</div>
+
+<script>
+const DATA = {"omzet": {"daily": [{"date": "2026-01-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-05", "bruto": 42585000.0, "diskon": 15945250.0, "netto": 26639750.0, "cost": 17421635.0, "gp": 9218115.0}, {"date": "2026-01-06", "bruto": 147083500.0, "diskon": 57967899.0, "netto": 89115601.0, "cost": 61358364.0, "gp": 27757237.0}, {"date": "2026-01-07", "bruto": 255018900.0, "diskon": 70686825.0, "netto": 184332075.0, "cost": 123009329.0, "gp": 61322746.0}, {"date": "2026-01-08", "bruto": 81050500.0, "diskon": 30392450.0, "netto": 50658050.0, "cost": 32011384.0, "gp": 18646666.0}, {"date": "2026-01-09", "bruto": 83749300.0, "diskon": 18745703.0, "netto": 65003598.0, "cost": 47088932.0, "gp": 17914665.0}, {"date": "2026-01-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-12", "bruto": 71462500.0, "diskon": 26992900.0, "netto": 44469600.0, "cost": 28370719.0, "gp": 16098881.0}, {"date": "2026-01-13", "bruto": 191574300.0, "diskon": 74498659.0, "netto": 117075641.0, "cost": 77556426.0, "gp": 39519216.0}, {"date": "2026-01-14", "bruto": 80285800.0, "diskon": 30968705.0, "netto": 49317095.0, "cost": 31952808.0, "gp": 17364287.0}, {"date": "2026-01-15", "bruto": 102526000.0, "diskon": 30818475.0, "netto": 71707525.0, "cost": 47125477.0, "gp": 24582048.0}, {"date": "2026-01-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-19", "bruto": 33665500.0, "diskon": 7945640.0, "netto": 25719860.0, "cost": 17089343.0, "gp": 8630517.0}, {"date": "2026-01-20", "bruto": 102370400.0, "diskon": 36165447.0, "netto": 66204953.0, "cost": 43260412.0, "gp": 22944541.0}, {"date": "2026-01-21", "bruto": 431276000.0, "diskon": 21461300.0, "netto": 409814700.0, "cost": 313479312.0, "gp": 96335388.0}, {"date": "2026-01-22", "bruto": 260379500.0, "diskon": 63044555.0, "netto": 197334945.0, "cost": 131603307.0, "gp": 65731638.0}, {"date": "2026-01-23", "bruto": 59446000.0, "diskon": 22676330.0, "netto": 36769670.0, "cost": 25340963.0, "gp": 11428707.0}, {"date": "2026-01-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-26", "bruto": 443218000.0, "diskon": 91653263.0, "netto": 351564738.0, "cost": 263849132.0, "gp": 87715605.0}, {"date": "2026-01-27", "bruto": 136035500.0, "diskon": 54038450.0, "netto": 81997050.0, "cost": 52711930.0, "gp": 29285120.0}, {"date": "2026-01-28", "bruto": 317536400.0, "diskon": 123392180.0, "netto": 194144220.0, "cost": 118486044.0, "gp": 75658177.0}, {"date": "2026-01-29", "bruto": 305433600.0, "diskon": 67188382.0, "netto": 238245218.0, "cost": 157129019.0, "gp": 81116199.0}, {"date": "2026-01-30", "bruto": 505510600.0, "diskon": 104844255.0, "netto": 400666345.0, "cost": 279340223.0, "gp": 121326122.0}, {"date": "2026-01-31", "bruto": 28374000.0, "diskon": 6513000.0, "netto": 21861000.0, "cost": 16420589.0, "gp": 5440411.0}, {"date": "2026-02-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-02", "bruto": 72135000.0, "diskon": 28002750.0, "netto": 44132250.0, "cost": 30585921.0, "gp": 13546329.0}, {"date": "2026-02-03", "bruto": 167922000.0, "diskon": 55418070.0, "netto": 112503930.0, "cost": 71075221.0, "gp": 41428709.0}, {"date": "2026-02-04", "bruto": 312303000.0, "diskon": 58615350.0, "netto": 253687650.0, "cost": 171746027.0, "gp": 81941623.0}, {"date": "2026-02-05", "bruto": 67799900.0, "diskon": 20610520.0, "netto": 47189380.0, "cost": 35201897.0, "gp": 11987483.0}, {"date": "2026-02-06", "bruto": 71411000.0, "diskon": 28047400.0, "netto": 43363600.0, "cost": 29393374.0, "gp": 13970226.0}, {"date": "2026-02-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-09", "bruto": 128115500.0, "diskon": 56000141.0, "netto": 72115359.0, "cost": 54718186.0, "gp": 17397173.0}, {"date": "2026-02-10", "bruto": 313991600.0, "diskon": 37033466.0, "netto": 276958134.0, "cost": 187679232.0, "gp": 89278902.0}, {"date": "2026-02-11", "bruto": 80045500.0, "diskon": 10340800.0, "netto": 69704700.0, "cost": 43554524.0, "gp": 26150176.0}, {"date": "2026-02-12", "bruto": 142947500.0, "diskon": 34735450.0, "netto": 108212050.0, "cost": 77255720.0, "gp": 30956330.0}, {"date": "2026-02-13", "bruto": 229597700.0, "diskon": 41814730.0, "netto": 187782970.0, "cost": 128833800.0, "gp": 58949170.0}, {"date": "2026-02-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-17", "bruto": 15015000.0, "diskon": 7479690.0, "netto": 7535310.0, "cost": 6436306.0, "gp": 1099004.0}, {"date": "2026-02-18", "bruto": 263810700.0, "diskon": 39420423.0, "netto": 224390277.0, "cost": 157180918.0, "gp": 67209359.0}, {"date": "2026-02-19", "bruto": 140038500.0, "diskon": 30778175.0, "netto": 109260325.0, "cost": 74917719.0, "gp": 34342606.0}, {"date": "2026-02-20", "bruto": 139803000.0, "diskon": 46445770.0, "netto": 93357230.0, "cost": 63826851.0, "gp": 29530379.0}, {"date": "2026-02-21", "bruto": 142398000.0, "diskon": 0.0, "netto": 142398000.0, "cost": 95406660.0, "gp": 46991340.0}, {"date": "2026-02-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-23", "bruto": 186498800.0, "diskon": 66490195.0, "netto": 120008605.0, "cost": 68810060.0, "gp": 51198545.0}, {"date": "2026-02-24", "bruto": 364884800.0, "diskon": 79933847.0, "netto": 284950953.0, "cost": 202201724.0, "gp": 82749229.0}, {"date": "2026-02-25", "bruto": 64918500.0, "diskon": 24356750.0, "netto": 40561750.0, "cost": 25761318.0, "gp": 14800432.0}, {"date": "2026-02-26", "bruto": 50245500.0, "diskon": 9858600.0, "netto": 40386900.0, "cost": 29683101.0, "gp": 10703799.0}, {"date": "2026-02-27", "bruto": 364192300.0, "diskon": 68691110.0, "netto": 295501191.0, "cost": 189530268.0, "gp": 105970923.0}, {"date": "2026-02-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-02", "bruto": -2987846.0, "diskon": 478730.0, "netto": -3466576.0, "cost": 1159655.0, "gp": -4626231.0}, {"date": "2026-03-03", "bruto": 30648000.0, "diskon": 11601025.0, "netto": 19046975.0, "cost": 11302821.0, "gp": 7744154.0}, {"date": "2026-03-04", "bruto": 30935500.0, "diskon": 7000938.0, "netto": 23934563.0, "cost": 15922117.0, "gp": 8012445.0}, {"date": "2026-03-05", "bruto": 308142200.0, "diskon": 71079717.0, "netto": 237062483.0, "cost": 179639425.0, "gp": 57423057.0}, {"date": "2026-03-06", "bruto": 68773707.0, "diskon": 32524100.0, "netto": 36249607.0, "cost": 24007577.0, "gp": 12242030.0}, {"date": "2026-03-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-09", "bruto": 75166400.0, "diskon": 32362084.0, "netto": 42804316.0, "cost": 28581910.0, "gp": 14222406.0}, {"date": "2026-03-10", "bruto": 167119800.0, "diskon": 78681652.0, "netto": 88438148.0, "cost": 63369303.0, "gp": 25068845.0}, {"date": "2026-03-11", "bruto": 50737500.0, "diskon": 19173438.0, "netto": 31564062.0, "cost": 19931670.0, "gp": 11632392.0}, {"date": "2026-03-12", "bruto": 205561800.0, "diskon": 32755955.0, "netto": 172805845.0, "cost": 102099125.0, "gp": 70706720.0}, {"date": "2026-03-13", "bruto": 35703000.0, "diskon": 19641609.0, "netto": 16061391.0, "cost": 11378918.0, "gp": 4682473.0}, {"date": "2026-03-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-15", "bruto": 270000000.0, "diskon": 0.0, "netto": 270000000.0, "cost": 180900000.0, "gp": 89100000.0}, {"date": "2026-03-16", "bruto": 194114480.0, "diskon": 33924691.0, "netto": 160189789.0, "cost": 118546660.0, "gp": 41643129.0}, {"date": "2026-03-17", "bruto": 78658800.0, "diskon": 22970350.0, "netto": 55688450.0, "cost": 40726623.0, "gp": 14961826.0}, {"date": "2026-03-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-25", "bruto": 7009000.0, "diskon": 3013400.0, "netto": 3995600.0, "cost": 2565085.0, "gp": 1430515.0}, {"date": "2026-03-26", "bruto": 225927500.0, "diskon": 16617400.0, "netto": 209310100.0, "cost": 157353751.0, "gp": 51956349.0}, {"date": "2026-03-27", "bruto": 45998500.0, "diskon": 18031500.0, "netto": 27967000.0, "cost": 17871166.0, "gp": 10095834.0}, {"date": "2026-03-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-30", "bruto": 71727900.0, "diskon": 29025544.0, "netto": 42702356.0, "cost": 26738399.0, "gp": 15963957.0}, {"date": "2026-03-31", "bruto": 313012600.0, "diskon": 62002080.0, "netto": 251010520.0, "cost": 163606591.0, "gp": 87403929.0}, {"date": "2026-04-01", "bruto": 30481000.0, "diskon": 10787052.0, "netto": 19693948.0, "cost": 10530706.0, "gp": 9163242.0}, {"date": "2026-04-02", "bruto": 73338000.0, "diskon": 27399200.0, "netto": 45938800.0, "cost": 27987052.0, "gp": 17951748.0}, {"date": "2026-04-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-06", "bruto": 72937700.0, "diskon": 26524436.0, "netto": 46413264.0, "cost": 29811957.0, "gp": 16601307.0}, {"date": "2026-04-07", "bruto": 49052500.0, "diskon": 19617075.0, "netto": 29435425.0, "cost": 19293282.0, "gp": 10142143.0}, {"date": "2026-04-08", "bruto": 26845000.0, "diskon": 10276750.0, "netto": 16568250.0, "cost": 10937851.0, "gp": 5630400.0}, {"date": "2026-04-09", "bruto": 19410000.0, "diskon": 5699750.0, "netto": 13710250.0, "cost": 9136613.0, "gp": 4573637.0}, {"date": "2026-04-10", "bruto": 107347384.0, "diskon": 34170129.0, "netto": 73177255.0, "cost": 60036281.0, "gp": 13140974.0}, {"date": "2026-04-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-13", "bruto": 172552300.0, "diskon": 52960395.0, "netto": 119591905.0, "cost": 80269844.0, "gp": 39322061.0}, {"date": "2026-04-14", "bruto": 45213500.0, "diskon": 18297076.0, "netto": 26916424.0, "cost": 18824349.0, "gp": 8092074.0}, {"date": "2026-04-15", "bruto": 30383500.0, "diskon": 9947825.0, "netto": 20435675.0, "cost": 11922862.0, "gp": 8512813.0}, {"date": "2026-04-16", "bruto": 144274700.0, "diskon": 38248331.0, "netto": 106026369.0, "cost": 77848243.0, "gp": 28178126.0}, {"date": "2026-04-17", "bruto": 171148660.0, "diskon": 34976103.0, "netto": 136172557.0, "cost": 103123224.0, "gp": 33049333.0}, {"date": "2026-04-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-20", "bruto": 89059700.0, "diskon": 42785353.0, "netto": 46274348.0, "cost": 33273458.0, "gp": 13000889.0}, {"date": "2026-04-21", "bruto": 96447800.0, "diskon": 37658442.0, "netto": 58789358.0, "cost": 42303032.0, "gp": 16486326.0}, {"date": "2026-04-22", "bruto": 92156300.0, "diskon": 24025488.0, "netto": 68130813.0, "cost": 52360724.0, "gp": 15770089.0}, {"date": "2026-04-23", "bruto": 78998600.0, "diskon": 20906839.0, "netto": 58091761.0, "cost": 36598564.0, "gp": 21493197.0}, {"date": "2026-04-24", "bruto": 90356740.0, "diskon": 34072729.0, "netto": 56284011.0, "cost": 40057398.0, "gp": 16226613.0}, {"date": "2026-04-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-27", "bruto": 115951400.0, "diskon": 40255760.0, "netto": 75695640.0, "cost": 48100219.0, "gp": 27595421.0}, {"date": "2026-04-28", "bruto": 84177800.0, "diskon": 33147755.0, "netto": 51030045.0, "cost": 35033103.0, "gp": 15996942.0}, {"date": "2026-04-29", "bruto": 409623198.0, "diskon": 59984118.0, "netto": 349639081.0, "cost": 256320143.0, "gp": 93318938.0}, {"date": "2026-04-30", "bruto": 711096100.0, "diskon": 154668755.0, "netto": 556427345.0, "cost": 323347983.0, "gp": 233079362.0}, {"date": "2026-05-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-04", "bruto": 60044000.0, "diskon": 24117808.0, "netto": 35926193.0, "cost": 23340513.0, "gp": 12585680.0}, {"date": "2026-05-05", "bruto": 90656900.0, "diskon": 34846530.0, "netto": 55810370.0, "cost": 33647307.0, "gp": 22163063.0}, {"date": "2026-05-06", "bruto": 407339900.0, "diskon": 158089428.0, "netto": 249250473.0, "cost": 159620353.0, "gp": 89630119.0}, {"date": "2026-05-07", "bruto": 16145500.0, "diskon": 6428500.0, "netto": 9717000.0, "cost": 5851411.0, "gp": 3865589.0}, {"date": "2026-05-08", "bruto": 13113100.0, "diskon": 2296050.0, "netto": 10817050.0, "cost": 7932173.0, "gp": 2884877.0}, {"date": "2026-05-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-11", "bruto": 28518902.0, "diskon": 10593371.0, "netto": 17925531.0, "cost": 12192079.0, "gp": 5733453.0}, {"date": "2026-05-12", "bruto": 24892740.0, "diskon": 8890535.0, "netto": 16002205.0, "cost": 10307625.0, "gp": 5694580.0}, {"date": "2026-05-13", "bruto": 108301000.0, "diskon": 34395766.0, "netto": 73905234.0, "cost": 44717446.0, "gp": 29187788.0}, {"date": "2026-05-14", "bruto": 105664300.0, "diskon": 39860441.0, "netto": 65803859.0, "cost": 40877810.0, "gp": 24926049.0}, {"date": "2026-05-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-18", "bruto": 165941200.0, "diskon": 75295044.0, "netto": 90646156.0, "cost": 58191333.0, "gp": 32454824.0}, {"date": "2026-05-19", "bruto": 84382500.0, "diskon": 34676650.0, "netto": 49705850.0, "cost": 27747059.0, "gp": 21958791.0}, {"date": "2026-05-20", "bruto": 15515100.0, "diskon": 5044220.0, "netto": 10470880.0, "cost": 8771614.0, "gp": 1699266.0}, {"date": "2026-05-21", "bruto": 70847200.0, "diskon": 20722910.0, "netto": 50124290.0, "cost": 36151075.0, "gp": 13973215.0}, {"date": "2026-05-22", "bruto": 23306000.0, "diskon": 6867200.0, "netto": 16438800.0, "cost": 10252106.0, "gp": 6186694.0}, {"date": "2026-05-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-25", "bruto": 263903400.0, "diskon": 63722413.0, "netto": 200180987.0, "cost": 139103821.0, "gp": 61077167.0}, {"date": "2026-05-26", "bruto": 109955390.0, "diskon": 42688946.0, "netto": 67266444.0, "cost": 34737961.0, "gp": 32528483.0}, {"date": "2026-05-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-29", "bruto": 271080430.0, "diskon": 60774193.0, "netto": 210306237.0, "cost": 125858209.0, "gp": 84448028.0}, {"date": "2026-05-30", "bruto": 26730000.0, "diskon": 16956337.0, "netto": 9773663.0, "cost": 9308250.0, "gp": 465413.0}, {"date": "2026-05-31", "bruto": 72090000.0, "diskon": 28836000.0, "netto": 43254000.0, "cost": 32481903.0, "gp": 10772097.0}, {"date": "2026-06-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-02", "bruto": 28549900.0, "diskon": 15916836.0, "netto": 12633064.0, "cost": 11824453.0, "gp": 808610.0}, {"date": "2026-06-03", "bruto": 13297000.0, "diskon": 5256300.0, "netto": 8040700.0, "cost": 4697641.0, "gp": 3343059.0}, {"date": "2026-06-04", "bruto": 99773000.0, "diskon": 33229200.0, "netto": 66543800.0, "cost": 39688655.0, "gp": 26855145.0}, {"date": "2026-06-05", "bruto": 56564300.0, "diskon": 21902370.0, "netto": 34661930.0, "cost": 23782573.0, "gp": 10879357.0}, {"date": "2026-06-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-08", "bruto": 77004500.0, "diskon": 24071440.0, "netto": 52933060.0, "cost": 31750116.0, "gp": 21182944.0}, {"date": "2026-06-09", "bruto": 66578800.0, "diskon": 21948830.0, "netto": 44629970.0, "cost": 27762590.0, "gp": 16867380.0}, {"date": "2026-06-10", "bruto": 31125700.0, "diskon": 8522065.0, "netto": 22603635.0, "cost": 15691489.0, "gp": 6912146.0}, {"date": "2026-06-11", "bruto": 56163900.0, "diskon": 18343773.0, "netto": 37820128.0, "cost": 23010236.0, "gp": 14809892.0}, {"date": "2026-06-12", "bruto": 37734565.0, "diskon": 15149730.0, "netto": 22584835.0, "cost": 12970545.0, "gp": 9614290.0}, {"date": "2026-06-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}], "monthly": [{"month": "Jan", "bruto": 3678581300.0, "diskon": 955939668.0, "netto": 2722641634.0, "cost": 1884605348.0, "gp": 838036286.0, "active_days": 20}, {"month": "Feb", "bruto": 3318073800.0, "diskon": 744073237.0, "netto": 2574000564.0, "cost": 1743798827.0, "gp": 830201737.0, "active_days": 20}, {"month": "Mar", "bruto": 2176248841.0, "diskon": 490884213.0, "netto": 1685364629.0, "cost": 1165700796.0, "gp": 519663830.0, "active_days": 18}, {"month": "Apr", "bruto": 2710851882.0, "diskon": 736409361.0, "netto": 1974442524.0, "cost": 1327116888.0, "gp": 647325635.0, "active_days": 21}, {"month": "Mei", "bruto": 1958427562.0, "diskon": 675102342.0, "netto": 1283325222.0, "cost": 821090048.0, "gp": 462235176.0, "active_days": 19}, {"month": "Jun", "bruto": 466791665.0, "diskon": 164340544.0, "netto": 302451122.0, "cost": 191178298.0, "gp": 111272823.0, "active_days": 9}, {"month": "Jul", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Agu", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Sep", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Okt", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Nov", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Des", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}], "last_actual_date": "2026-06-12", "ytd": {"bruto": 14308975050.0, "diskon": 3766749365.0, "netto": 10542225695.0, "cost": 7133490205.0, "gp": 3408735487.0}, "avg_daily_netto": 98525473.78504673, "best_day": {"date": "2026-04-30", "bruto": 711096100.0, "diskon": 154668755.0, "netto": 556427345.0, "cost": 323347983.0, "gp": 233079362.0}, "worst_active_day": {"date": "2026-03-02", "bruto": -2987846.0, "diskon": 478730.0, "netto": -3466576.0, "cost": 1159655.0, "gp": -4626231.0}, "active_days_count": 107}, "saldo": {"daily": [{"date": "2025-12-30", "saldoAwal": 0.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 0.0}, {"date": "2025-12-31", "saldoAwal": 0.0, "debit": 445874328.0, "kredit": 0.0, "saldoAkhir": 445874328.0}, {"date": "2026-01-01", "saldoAwal": 445874328.0, "debit": 3998.0, "kredit": 130800.0, "saldoAkhir": 445747526.0}, {"date": "2026-01-02", "saldoAwal": 445747526.0, "debit": 21774750.0, "kredit": 0.0, "saldoAkhir": 467522276.0}, {"date": "2026-01-03", "saldoAwal": 467522276.0, "debit": 203570084.0, "kredit": 89822.0, "saldoAkhir": 671002538.0}, {"date": "2026-01-04", "saldoAwal": 671002538.0, "debit": 12710000.0, "kredit": 0.0, "saldoAkhir": 683712538.0}, {"date": "2026-01-05", "saldoAwal": 683712538.0, "debit": 834854476.0, "kredit": 766407963.0, "saldoAkhir": 752159051.0}, {"date": "2026-01-06", "saldoAwal": 752159051.0, "debit": 263873950.0, "kredit": 627677086.0, "saldoAkhir": 388355915.0}, {"date": "2026-01-07", "saldoAwal": 388355915.0, "debit": 230316000.0, "kredit": 106409953.0, "saldoAkhir": 512261962.0}, {"date": "2026-01-08", "saldoAwal": 512261962.0, "debit": 305274131.0, "kredit": 490376100.0, "saldoAkhir": 327159993.0}, {"date": "2026-01-09", "saldoAwal": 327159993.0, "debit": 161978380.0, "kredit": 121837352.0, "saldoAkhir": 367301021.0}, {"date": "2026-01-10", "saldoAwal": 367301021.0, "debit": 11824900.0, "kredit": 0.0, "saldoAkhir": 379125921.0}, {"date": "2026-01-11", "saldoAwal": 379125921.0, "debit": 35192300.0, "kredit": 0.0, "saldoAkhir": 414318221.0}, {"date": "2026-01-12", "saldoAwal": 414318221.0, "debit": 214122813.0, "kredit": 227849318.0, "saldoAkhir": 400591716.0}, {"date": "2026-01-13", "saldoAwal": 400591716.0, "debit": 270999389.0, "kredit": 208697442.0, "saldoAkhir": 462893663.0}, {"date": "2026-01-14", "saldoAwal": 462893663.0, "debit": 185307883.0, "kredit": 405967696.0, "saldoAkhir": 242233850.0}, {"date": "2026-01-15", "saldoAwal": 242233850.0, "debit": 638055837.0, "kredit": 675590461.0, "saldoAkhir": 204699226.0}, {"date": "2026-01-16", "saldoAwal": 204699226.0, "debit": 51059875.0, "kredit": 0.0, "saldoAkhir": 255759101.0}, {"date": "2026-01-17", "saldoAwal": 255759101.0, "debit": 45950809.0, "kredit": 0.0, "saldoAkhir": 301709910.0}, {"date": "2026-01-18", "saldoAwal": 301709910.0, "debit": 27302000.0, "kredit": 0.0, "saldoAkhir": 329011910.0}, {"date": "2026-01-19", "saldoAwal": 329011910.0, "debit": 180324822.0, "kredit": 164193300.0, "saldoAkhir": 345143432.0}, {"date": "2026-01-20", "saldoAwal": 345143432.0, "debit": 47040479.0, "kredit": 118086567.0, "saldoAkhir": 274097344.0}, {"date": "2026-01-21", "saldoAwal": 274097344.0, "debit": 171421554.0, "kredit": 103876200.0, "saldoAkhir": 341642698.0}, {"date": "2026-01-22", "saldoAwal": 341642698.0, "debit": 7978589626.0, "kredit": 220556921.0, "saldoAkhir": 8099675403.0}, {"date": "2026-01-23", "saldoAwal": 8099675403.0, "debit": 366933053.0, "kredit": 120617000.0, "saldoAkhir": 8345991455.0}, {"date": "2026-01-24", "saldoAwal": 8345991455.0, "debit": 20865000.0, "kredit": 0.0, "saldoAkhir": 8366856455.0}, {"date": "2026-01-25", "saldoAwal": 8366856455.0, "debit": 9678975.0, "kredit": 0.0, "saldoAkhir": 8376535430.0}, {"date": "2026-01-26", "saldoAwal": 8376535430.0, "debit": 452911857.0, "kredit": 805876212.0, "saldoAkhir": 8023571075.0}, {"date": "2026-01-27", "saldoAwal": 8023571075.0, "debit": 717618190.0, "kredit": 1126335400.0, "saldoAkhir": 7614853865.0}, {"date": "2026-01-28", "saldoAwal": 7614853865.0, "debit": 67715000.0, "kredit": 10852000.0, "saldoAkhir": 7671716865.0}, {"date": "2026-01-29", "saldoAwal": 7671716865.0, "debit": 2695068489.0, "kredit": 4684579841.0, "saldoAkhir": 5682205513.0}, {"date": "2026-01-30", "saldoAwal": 5682205513.0, "debit": 259457381.0, "kredit": 495965112.0, "saldoAkhir": 5445697782.0}, {"date": "2026-01-31", "saldoAwal": 5445697782.0, "debit": 4605513409.0, "kredit": 4600468460.0, "saldoAkhir": 5450742730.0}, {"date": "2026-02-01", "saldoAwal": 5450742730.0, "debit": 4601242490.0, "kredit": 4600033498.0, "saldoAkhir": 5451951722.0}, {"date": "2026-02-02", "saldoAwal": 5451951722.0, "debit": 526176465.0, "kredit": 928886006.0, "saldoAkhir": 5049242181.0}, {"date": "2026-02-03", "saldoAwal": 5049242181.0, "debit": 16010400.0, "kredit": 31927957.0, "saldoAkhir": 5033324624.0}, {"date": "2026-02-04", "saldoAwal": 5033324624.0, "debit": 123792643.0, "kredit": 5470900.0, "saldoAkhir": 5151646367.0}, {"date": "2026-02-05", "saldoAwal": 5151646367.0, "debit": 181011679.0, "kredit": 146408538.0, "saldoAkhir": 5186249508.0}, {"date": "2026-02-06", "saldoAwal": 5186249508.0, "debit": 494879302.0, "kredit": 559064177.0, "saldoAkhir": 5122064633.0}, {"date": "2026-02-07", "saldoAwal": 5122064633.0, "debit": 11486048.0, "kredit": 9770000.0, "saldoAkhir": 5123780680.0}, {"date": "2026-02-08", "saldoAwal": 5123780680.0, "debit": 6762725.0, "kredit": 0.0, "saldoAkhir": 5130543405.0}, {"date": "2026-02-09", "saldoAwal": 5130543405.0, "debit": 493049379.0, "kredit": 380312500.0, "saldoAkhir": 5243280284.0}, {"date": "2026-02-10", "saldoAwal": 5243280284.0, "debit": 800398978.0, "kredit": 883936654.0, "saldoAkhir": 5159742608.0}, {"date": "2026-02-11", "saldoAwal": 5159742608.0, "debit": 216160938.0, "kredit": 197157055.0, "saldoAkhir": 5178746491.0}, {"date": "2026-02-12", "saldoAwal": 5178746491.0, "debit": 700780794.0, "kredit": 638697205.0, "saldoAkhir": 5240830080.0}, {"date": "2026-02-13", "saldoAwal": 5240830080.0, "debit": 80540352.0, "kredit": 162685772.0, "saldoAkhir": 5158684660.0}, {"date": "2026-02-14", "saldoAwal": 5158684660.0, "debit": 21861200.0, "kredit": 0.0, "saldoAkhir": 5180545860.0}, {"date": "2026-02-15", "saldoAwal": 5180545860.0, "debit": 300000.0, "kredit": 0.0, "saldoAkhir": 5180845860.0}, {"date": "2026-02-16", "saldoAwal": 5180845860.0, "debit": 12224700.0, "kredit": 0.0, "saldoAkhir": 5193070560.0}, {"date": "2026-02-17", "saldoAwal": 5193070560.0, "debit": 32598450.0, "kredit": 0.0, "saldoAkhir": 5225669010.0}, {"date": "2026-02-18", "saldoAwal": 5225669010.0, "debit": 254205915.0, "kredit": 199705739.0, "saldoAkhir": 5280169186.0}, {"date": "2026-02-19", "saldoAwal": 5280169186.0, "debit": 105610235.0, "kredit": 17351300.0, "saldoAkhir": 5368428121.0}, {"date": "2026-02-20", "saldoAwal": 5368428121.0, "debit": 456385505.0, "kredit": 602831333.0, "saldoAkhir": 5221982293.0}, {"date": "2026-02-21", "saldoAwal": 5221982293.0, "debit": 13503660.0, "kredit": 0.0, "saldoAkhir": 5235485953.0}, {"date": "2026-02-22", "saldoAwal": 5235485953.0, "debit": 148500.0, "kredit": 0.0, "saldoAkhir": 5235634453.0}, {"date": "2026-02-23", "saldoAwal": 5235634453.0, "debit": 699164188.0, "kredit": 994711200.0, "saldoAkhir": 4940087441.0}, {"date": "2026-02-24", "saldoAwal": 4940087441.0, "debit": 127725370.0, "kredit": 77899195.0, "saldoAkhir": 4989913616.0}, {"date": "2026-02-25", "saldoAwal": 4989913616.0, "debit": 98737590.0, "kredit": 152076832.0, "saldoAkhir": 4936574374.0}, {"date": "2026-02-26", "saldoAwal": 4936574374.0, "debit": 581276006.0, "kredit": 503395564.0, "saldoAkhir": 5014454816.0}, {"date": "2026-02-27", "saldoAwal": 5014454816.0, "debit": 820123638.0, "kredit": 677470174.0, "saldoAkhir": 5157108279.0}, {"date": "2026-02-28", "saldoAwal": 5157108279.0, "debit": 8629344.0, "kredit": 19562204.0, "saldoAkhir": 5146175419.0}, {"date": "2026-03-01", "saldoAwal": 5146175419.0, "debit": 19082261.0, "kredit": 32852.0, "saldoAkhir": 5165224828.0}, {"date": "2026-03-02", "saldoAwal": 5165224828.0, "debit": 526515363.0, "kredit": 695548500.0, "saldoAkhir": 4996191691.0}, {"date": "2026-03-03", "saldoAwal": 4996191691.0, "debit": 73597980.0, "kredit": 42417329.0, "saldoAkhir": 5027372342.0}, {"date": "2026-03-04", "saldoAwal": 5027372342.0, "debit": 221449204.0, "kredit": 156275200.0, "saldoAkhir": 5092546346.0}, {"date": "2026-03-05", "saldoAwal": 5092546346.0, "debit": 1005726476.0, "kredit": 1533946046.0, "saldoAkhir": 4564326776.0}, {"date": "2026-03-06", "saldoAwal": 4564326776.0, "debit": 95758380.0, "kredit": 275456374.0, "saldoAkhir": 4384628782.0}, {"date": "2026-03-07", "saldoAwal": 4384628782.0, "debit": 8450066.0, "kredit": 483000.0, "saldoAkhir": 4392595848.0}, {"date": "2026-03-08", "saldoAwal": 4392595848.0, "debit": 565200.0, "kredit": 0.0, "saldoAkhir": 4393161048.0}, {"date": "2026-03-09", "saldoAwal": 4393161048.0, "debit": 70885370.0, "kredit": 7096000.0, "saldoAkhir": 4456950418.0}, {"date": "2026-03-10", "saldoAwal": 4456950418.0, "debit": 586219582.0, "kredit": 562133618.0, "saldoAkhir": 4481036382.0}, {"date": "2026-03-11", "saldoAwal": 4481036382.0, "debit": 164221600.0, "kredit": 189313065.0, "saldoAkhir": 4455944917.0}, {"date": "2026-03-12", "saldoAwal": 4455944917.0, "debit": 534702912.0, "kredit": 509478146.0, "saldoAkhir": 4481169683.0}, {"date": "2026-03-13", "saldoAwal": 4481169683.0, "debit": 54391252.0, "kredit": 175310380.0, "saldoAkhir": 4360250555.0}, {"date": "2026-03-14", "saldoAwal": 4360250555.0, "debit": 54967750.0, "kredit": 0.0, "saldoAkhir": 4415218305.0}, {"date": "2026-03-15", "saldoAwal": 4415218305.0, "debit": 18458350.0, "kredit": 0.0, "saldoAkhir": 4433676655.0}, {"date": "2026-03-16", "saldoAwal": 4433676655.0, "debit": 632931816.0, "kredit": 370306057.0, "saldoAkhir": 4696302413.0}, {"date": "2026-03-17", "saldoAwal": 4696302413.0, "debit": 437023232.0, "kredit": 374349042.0, "saldoAkhir": 4758976603.0}, {"date": "2026-03-18", "saldoAwal": 4758976603.0, "debit": 152563000.0, "kredit": 0.0, "saldoAkhir": 4911539603.0}, {"date": "2026-03-19", "saldoAwal": 4911539603.0, "debit": 837500.0, "kredit": 0.0, "saldoAkhir": 4912377103.0}, {"date": "2026-03-20", "saldoAwal": 4912377103.0, "debit": 9345050.0, "kredit": 0.0, "saldoAkhir": 4921722153.0}, {"date": "2026-03-21", "saldoAwal": 4921722153.0, "debit": 600000.0, "kredit": 0.0, "saldoAkhir": 4922322153.0}, {"date": "2026-03-22", "saldoAwal": 4922322153.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 4922322153.0}, {"date": "2026-03-23", "saldoAwal": 4922322153.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 4922322153.0}, {"date": "2026-03-24", "saldoAwal": 4922322153.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 4922322153.0}, {"date": "2026-03-25", "saldoAwal": 4922322153.0, "debit": 274162300.0, "kredit": 583919483.0, "saldoAkhir": 4612564970.0}, {"date": "2026-03-26", "saldoAwal": 4612564970.0, "debit": 40942765.0, "kredit": 3634116.0, "saldoAkhir": 4649873619.0}, {"date": "2026-03-27", "saldoAwal": 4649873619.0, "debit": 233616735.0, "kredit": 8259705.0, "saldoAkhir": 4875230649.0}, {"date": "2026-03-28", "saldoAwal": 4875230649.0, "debit": 8977675.0, "kredit": 0.0, "saldoAkhir": 4884208324.0}, {"date": "2026-03-29", "saldoAwal": 4884208324.0, "debit": 1051200.0, "kredit": 0.0, "saldoAkhir": 4885259524.0}, {"date": "2026-03-30", "saldoAwal": 4885259524.0, "debit": 371484289.0, "kredit": 265197473.0, "saldoAkhir": 4991546340.0}, {"date": "2026-03-31", "saldoAwal": 4991546340.0, "debit": 1045476231.0, "kredit": 1745366121.0, "saldoAkhir": 4291656450.0}, {"date": "2026-04-01", "saldoAwal": 4291656450.0, "debit": 21275384.0, "kredit": 476915.0, "saldoAkhir": 4312454920.0}, {"date": "2026-04-02", "saldoAwal": 4312454920.0, "debit": 74235000.0, "kredit": 70888537.0, "saldoAkhir": 4315801382.0}, {"date": "2026-04-03", "saldoAwal": 4315801382.0, "debit": 3328025.0, "kredit": 71005.0, "saldoAkhir": 4319058402.0}, {"date": "2026-04-04", "saldoAwal": 4319058402.0, "debit": 23215591.0, "kredit": 0.0, "saldoAkhir": 4342273993.0}, {"date": "2026-04-05", "saldoAwal": 4342273993.0, "debit": 2400000.0, "kredit": 0.0, "saldoAkhir": 4344673993.0}, {"date": "2026-04-06", "saldoAwal": 4344673993.0, "debit": 144083920.0, "kredit": 139174113.0, "saldoAkhir": 4349583800.0}, {"date": "2026-04-07", "saldoAwal": 4349583800.0, "debit": 177145078.0, "kredit": 452675984.0, "saldoAkhir": 4074052894.0}, {"date": "2026-04-08", "saldoAwal": 4074052894.0, "debit": 170001401.0, "kredit": 457000.0, "saldoAkhir": 4243597295.0}, {"date": "2026-04-09", "saldoAwal": 4243597295.0, "debit": 42362015.0, "kredit": 4132230.0, "saldoAkhir": 4281827080.0}, {"date": "2026-04-10", "saldoAwal": 4281827080.0, "debit": 343556815.0, "kredit": 430105872.0, "saldoAkhir": 4195278023.0}, {"date": "2026-04-11", "saldoAwal": 4195278023.0, "debit": 11550150.0, "kredit": 0.0, "saldoAkhir": 4206828173.0}, {"date": "2026-04-12", "saldoAwal": 4206828173.0, "debit": 10322800.0, "kredit": 46682058.0, "saldoAkhir": 4170468915.0}, {"date": "2026-04-13", "saldoAwal": 4170468915.0, "debit": 150879019.0, "kredit": 74750300.0, "saldoAkhir": 4246597634.0}, {"date": "2026-04-14", "saldoAwal": 4246597634.0, "debit": 237893850.0, "kredit": 303695900.0, "saldoAkhir": 4180795584.0}, {"date": "2026-04-15", "saldoAwal": 4180795584.0, "debit": 163072191.0, "kredit": 280685905.0, "saldoAkhir": 4063181870.0}, {"date": "2026-04-16", "saldoAwal": 4063181870.0, "debit": 253231978.0, "kredit": 2464500.0, "saldoAkhir": 4313949347.0}, {"date": "2026-04-17", "saldoAwal": 4313949347.0, "debit": 391025671.0, "kredit": 651613731.0, "saldoAkhir": 4053361287.0}, {"date": "2026-04-18", "saldoAwal": 4053361287.0, "debit": 8512870.0, "kredit": 0.0, "saldoAkhir": 4061874157.0}, {"date": "2026-04-19", "saldoAwal": 4061874157.0, "debit": 2895420.0, "kredit": 0.0, "saldoAkhir": 4064769577.0}, {"date": "2026-04-20", "saldoAwal": 4064769577.0, "debit": 174765550.0, "kredit": 26283700.0, "saldoAkhir": 4213251427.0}, {"date": "2026-04-21", "saldoAwal": 4213251427.0, "debit": 74312000.0, "kredit": 150417826.0, "saldoAkhir": 4137145601.0}, {"date": "2026-04-22", "saldoAwal": 4137145601.0, "debit": 148638165.0, "kredit": 146816274.0, "saldoAkhir": 4138967492.0}, {"date": "2026-04-23", "saldoAwal": 4138967492.0, "debit": 50657407.0, "kredit": 36001945.0, "saldoAkhir": 4153622954.0}, {"date": "2026-04-24", "saldoAwal": 4153622954.0, "debit": 289012588.0, "kredit": 358670679.0, "saldoAkhir": 4083964863.0}, {"date": "2026-04-25", "saldoAwal": 4083964863.0, "debit": 5430800.0, "kredit": 0.0, "saldoAkhir": 4089395663.0}, {"date": "2026-04-26", "saldoAwal": 4089395663.0, "debit": 0.0, "kredit": 35000.0, "saldoAkhir": 4089360663.0}, {"date": "2026-04-27", "saldoAwal": 4089360663.0, "debit": 157177275.0, "kredit": 37956968.0, "saldoAkhir": 4208580970.0}, {"date": "2026-04-28", "saldoAwal": 4208580970.0, "debit": 323419130.0, "kredit": 118579100.0, "saldoAkhir": 4413421000.0}, {"date": "2026-04-29", "saldoAwal": 4413421000.0, "debit": 242011822.0, "kredit": 197730300.0, "saldoAkhir": 4457702522.0}, {"date": "2026-04-30", "saldoAwal": 4457702522.0, "debit": 1178594745.0, "kredit": 1644065902.0, "saldoAkhir": 3992231366.0}, {"date": "2026-05-01", "saldoAwal": 3992231366.0, "debit": 40719465.0, "kredit": 37653.0, "saldoAkhir": 4032913178.0}, {"date": "2026-05-02", "saldoAwal": 4032913178.0, "debit": 49505500.0, "kredit": 0.0, "saldoAkhir": 4082418678.0}, {"date": "2026-05-03", "saldoAwal": 4082418678.0, "debit": 2450076.0, "kredit": 71166.0, "saldoAkhir": 4084797587.0}, {"date": "2026-05-04", "saldoAwal": 4084797587.0, "debit": 1486948950.0, "kredit": 2543896186.0, "saldoAkhir": 3027850351.0}, {"date": "2026-05-05", "saldoAwal": 3027850351.0, "debit": 72433925.0, "kredit": 32926000.0, "saldoAkhir": 3067358276.0}, {"date": "2026-05-06", "saldoAwal": 3067358276.0, "debit": 85740016.0, "kredit": 7134800.0, "saldoAkhir": 3145963492.0}, {"date": "2026-05-07", "saldoAwal": 3145963492.0, "debit": 228080455.0, "kredit": 316293577.0, "saldoAkhir": 3057750371.0}, {"date": "2026-05-08", "saldoAwal": 3057750371.0, "debit": 209674225.0, "kredit": 18674933.0, "saldoAkhir": 3248749663.0}, {"date": "2026-05-09", "saldoAwal": 3248749663.0, "debit": 4329000.0, "kredit": 0.0, "saldoAkhir": 3253078663.0}, {"date": "2026-05-10", "saldoAwal": 3253078663.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 3253078663.0}, {"date": "2026-05-11", "saldoAwal": 3253078663.0, "debit": 329486210.0, "kredit": 351630841.0, "saldoAkhir": 3230934032.0}, {"date": "2026-05-12", "saldoAwal": 3230934032.0, "debit": 266421511.0, "kredit": 540518811.0, "saldoAkhir": 2956836732.0}, {"date": "2026-05-13", "saldoAwal": 2956836732.0, "debit": 160945428.0, "kredit": 10850300.0, "saldoAkhir": 3106931860.0}, {"date": "2026-05-14", "saldoAwal": 3106931860.0, "debit": 95873772.0, "kredit": 196845226.0, "saldoAkhir": 3005960406.0}, {"date": "2026-05-15", "saldoAwal": 3005960406.0, "debit": 124260100.0, "kredit": 434082.0, "saldoAkhir": 3129786424.0}, {"date": "2026-05-16", "saldoAwal": 3129786424.0, "debit": 46129100.0, "kredit": 0.0, "saldoAkhir": 3175915524.0}, {"date": "2026-05-17", "saldoAwal": 3175915524.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 3175915524.0}, {"date": "2026-05-18", "saldoAwal": 3175915524.0, "debit": 428504682.0, "kredit": 675924954.0, "saldoAkhir": 2928495252.0}, {"date": "2026-05-19", "saldoAwal": 2928495252.0, "debit": 573505134.0, "kredit": 1025850588.0, "saldoAkhir": 2476149798.0}, {"date": "2026-05-20", "saldoAwal": 2476149798.0, "debit": 182573216.0, "kredit": 125509061.0, "saldoAkhir": 2533213953.0}, {"date": "2026-05-21", "saldoAwal": 2533213953.0, "debit": 229667390.0, "kredit": 270924013.0, "saldoAkhir": 2491957330.0}, {"date": "2026-05-22", "saldoAwal": 2491957330.0, "debit": 79600320.0, "kredit": 120748518.0, "saldoAkhir": 2450809132.0}, {"date": "2026-05-23", "saldoAwal": 2450809132.0, "debit": 5652000.0, "kredit": 0.0, "saldoAkhir": 2456461132.0}, {"date": "2026-05-24", "saldoAwal": 2456461132.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 2456461132.0}, {"date": "2026-05-25", "saldoAwal": 2456461132.0, "debit": 298354338.0, "kredit": 201044374.0, "saldoAkhir": 2553771096.0}, {"date": "2026-05-26", "saldoAwal": 2553771096.0, "debit": 181910402.0, "kredit": 318878052.0, "saldoAkhir": 2416803446.0}, {"date": "2026-05-27", "saldoAwal": 2416803446.0, "debit": 7500.0, "kredit": 0.0, "saldoAkhir": 2416810946.0}, {"date": "2026-05-28", "saldoAwal": 2416810946.0, "debit": 37395600.0, "kredit": 0.0, "saldoAkhir": 2454206546.0}, {"date": "2026-05-29", "saldoAwal": 2454206546.0, "debit": 2629122780.0, "kredit": 4389756173.0, "saldoAkhir": 693573153.0}, {"date": "2026-05-30", "saldoAwal": 693573153.0, "debit": 13115640.0, "kredit": 0.0, "saldoAkhir": 706688793.0}, {"date": "2026-05-31", "saldoAwal": 706688793.0, "debit": 16882541.0, "kredit": 525277.0, "saldoAkhir": 723046057.0}, {"date": "2026-06-01", "saldoAwal": 723046057.0, "debit": 30242600.0, "kredit": 150000.0, "saldoAkhir": 753138657.0}, {"date": "2026-06-02", "saldoAwal": 753138657.0, "debit": 283356575.0, "kredit": 354303510.0, "saldoAkhir": 682191722.0}, {"date": "2026-06-03", "saldoAwal": 682191722.0, "debit": 106114924.0, "kredit": 69866063.0, "saldoAkhir": 718440583.0}, {"date": "2026-06-04", "saldoAwal": 718440583.0, "debit": 73373525.0, "kredit": 24215000.0, "saldoAkhir": 767599108.0}, {"date": "2026-06-05", "saldoAwal": 767599108.0, "debit": 874152901.0, "kredit": 1122683834.0, "saldoAkhir": 519068175.0}, {"date": "2026-06-06", "saldoAwal": 519068175.0, "debit": 12454600.0, "kredit": 0.0, "saldoAkhir": 531522775.0}, {"date": "2026-06-07", "saldoAwal": 531522775.0, "debit": 5822800.0, "kredit": 0.0, "saldoAkhir": 537345575.0}, {"date": "2026-06-08", "saldoAwal": 537345575.0, "debit": 603559510.0, "kredit": 723371538.0, "saldoAkhir": 417533547.0}, {"date": "2026-06-09", "saldoAwal": 417533547.0, "debit": 86244409.0, "kredit": 912000.0, "saldoAkhir": 502865956.0}, {"date": "2026-06-10", "saldoAwal": 502865956.0, "debit": 444175960.0, "kredit": 548344829.0, "saldoAkhir": 398697087.0}, {"date": "2026-06-11", "saldoAwal": 398697087.0, "debit": 35070696.0, "kredit": 25166921.0, "saldoAkhir": 408600862.0}, {"date": "2026-06-12", "saldoAwal": 408600862.0, "debit": 243812811.0, "kredit": 264030200.0, "saldoAkhir": 388383473.0}, {"date": "2026-06-13", "saldoAwal": 388383473.0, "debit": 21533350.0, "kredit": 0.0, "saldoAkhir": 409916823.0}, {"date": "2026-06-14", "saldoAwal": 409916823.0, "debit": 6954000.0, "kredit": 0.0, "saldoAkhir": 416870823.0}, {"date": "2026-06-15", "saldoAwal": 416870823.0, "debit": 165854760.0, "kredit": 230440060.0, "saldoAkhir": 352285523.0}, {"date": "2026-06-16", "saldoAwal": 352285523.0, "debit": 27473600.0, "kredit": 1094339.0, "saldoAkhir": 378664784.0}, {"date": "2026-06-17", "saldoAwal": 378664784.0, "debit": 102231157.0, "kredit": 139207717.0, "saldoAkhir": 341688224.0}, {"date": "2026-06-18", "saldoAwal": 341688224.0, "debit": 9035250.0, "kredit": 0.0, "saldoAkhir": 350723474.0}, {"date": "2026-06-19", "saldoAwal": 350723474.0, "debit": 58609245.0, "kredit": 86254800.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-06-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-01", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-02", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-03", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-04", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-05", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-06", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-07", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-08", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-09", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-10", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-11", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-12", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-13", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-14", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-15", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-16", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-17", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-18", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-19", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-07-31", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-01", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-02", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-03", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-04", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-05", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-06", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-07", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-08", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-09", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-10", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-11", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-12", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-13", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-14", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-15", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-16", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-17", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-18", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-19", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-08-31", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-01", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-02", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-03", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-04", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-05", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-06", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-07", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-08", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-09", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-10", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-11", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-12", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-13", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-14", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-15", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-16", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-17", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-18", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-19", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-09-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-01", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-02", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-03", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-04", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-05", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-06", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-07", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-08", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-09", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-10", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-11", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-12", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-13", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-14", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-15", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-16", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-17", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-18", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-19", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-10-31", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-01", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-02", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-03", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-04", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-05", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-06", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-07", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-08", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-09", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-10", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-11", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-12", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-13", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-14", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-15", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-16", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-17", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-18", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-19", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-11-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-01", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-02", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-03", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-04", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-05", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-06", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-07", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-08", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-09", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-10", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-11", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-12", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-13", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-14", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-15", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-16", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-17", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-18", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-19", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-20", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-21", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-22", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-23", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-24", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-25", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-26", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-27", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-28", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-29", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-30", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}, {"date": "2026-12-31", "saldoAwal": 323077919.0, "debit": 0.0, "kredit": 0.0, "saldoAkhir": 323077919.0}], "monthly": [{"month": "Des", "year": 2025, "debit": 445874328.0, "kredit": 0.0, "net": 445874328.0, "saldoAwal": 0.0, "saldoAkhir": 445874328.0, "activeDays": 1, "daysTotal": 2}, {"month": "Jan", "year": 2026, "debit": 21087309410.0, "kredit": 16082441006.0, "net": 5004868404.0, "saldoAwal": 445874328.0, "saldoAkhir": 5450742730.0, "activeDays": 31, "daysTotal": 31}, {"month": "Feb", "year": 2026, "debit": 11484786494.0, "kredit": 11789353803.0, "net": -304567309.0, "saldoAwal": 5450742730.0, "saldoAkhir": 5146175419.0, "activeDays": 28, "daysTotal": 28}, {"month": "Mar", "year": 2026, "debit": 6644003539.0, "kredit": 7498522507.0, "net": -854518968.0, "saldoAwal": 5146175419.0, "saldoAkhir": 4291656450.0, "activeDays": 28, "daysTotal": 31}, {"month": "Apr", "year": 2026, "debit": 4875006660.0, "kredit": 5174431744.0, "net": -299425084.0, "saldoAwal": 4291656450.0, "saldoAkhir": 3992231366.0, "activeDays": 30, "daysTotal": 30}, {"month": "Mei", "year": 2026, "debit": 7879289276.0, "kredit": 11148474585.0, "net": -3269185309.0, "saldoAwal": 3992231366.0, "saldoAkhir": 723046057.0, "activeDays": 28, "daysTotal": 31}, {"month": "Jun", "year": 2026, "debit": 3190072673.0, "kredit": 3590040811.0, "net": -399968138.0, "saldoAwal": 723046057.0, "saldoAkhir": 323077919.0, "activeDays": 19, "daysTotal": 30}, {"month": "Jul", "year": 2026, "debit": 0.0, "kredit": 0.0, "net": 0.0, "saldoAwal": 323077919.0, "saldoAkhir": 323077919.0, "activeDays": 0, "daysTotal": 31}, {"month": "Agu", "year": 2026, "debit": 0.0, "kredit": 0.0, "net": 0.0, "saldoAwal": 323077919.0, "saldoAkhir": 323077919.0, "activeDays": 0, "daysTotal": 31}, {"month": "Sep", "year": 2026, "debit": 0.0, "kredit": 0.0, "net": 0.0, "saldoAwal": 323077919.0, "saldoAkhir": 323077919.0, "activeDays": 0, "daysTotal": 30}, {"month": "Okt", "year": 2026, "debit": 0.0, "kredit": 0.0, "net": 0.0, "saldoAwal": 323077919.0, "saldoAkhir": 323077919.0, "activeDays": 0, "daysTotal": 31}, {"month": "Nov", "year": 2026, "debit": 0.0, "kredit": 0.0, "net": 0.0, "saldoAwal": 323077919.0, "saldoAkhir": 323077919.0, "activeDays": 0, "daysTotal": 30}, {"month": "Des", "year": 2026, "debit": 0.0, "kredit": 0.0, "net": 0.0, "saldoAwal": 323077919.0, "saldoAkhir": 323077919.0, "activeDays": 0, "daysTotal": 31}], "last_actual_date": "2026-06-19"}, "cashflow": {"months": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"], "last_actual_month_idx": 5, "operasional": {"items": [{"desc": "Penerimaan Piutang Usaha", "category": "Cash in From Account Receivable", "dk": "D", "monthly": [2429901050.0, 3303598771.0, 2465934768.0, 1979964741.0, 2021308897.0, 1194829798.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": 13395538025.0}, {"desc": "Penerimaan Piutang Lain", "category": "Cash in From Account Receivable", "dk": "D", "monthly": [10748416.0, -41080450.0, 35000000.0, 17500000.0, 701322764.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": 723490730.0}, {"desc": "Penerimaan Diluar Usaha", "category": "Cash in From Others", "dk": "D", "monthly": [4069231.0, 10979884.0, 1760078.0, 47925994.0, 1521300.0, 79218.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": 66335705.0}, {"desc": "Penerimaan Lain", "category": "Cash in From Others", "dk": "D", "monthly": [1824032.0, 7587568.0, 3030593.0, -25091776.0, -110109385.0, 22536077.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -100222891.0}, {"desc": "Pengeluaran untuk HPP", "category": "Cash out for Account Payable", "dk": "K", "monthly": [0.0, 0.0, 0.0, 0.0, 0.0, -950000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -950000.0}, {"desc": "Pengeluaran untuk Biaya Operasional", "category": "Cash out for OPEX", "dk": "K", "monthly": [-36697333.0, -32750452.0, -51770584.0, -23069252.0, -41331288.0, -39271593.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -224890502.0}, {"desc": "Pengeluaran untuk Biaya Adm & Umum", "category": "Cash out for OPEX", "dk": "K", "monthly": [-152550174.0, -193816093.0, -224072920.0, -197781727.0, -206019337.0, -71257829.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -1045498080.0}, {"desc": "Pembayaran ke Vendor", "category": "Cash out for Account Payable", "dk": "K", "monthly": [-3142806620.0, -2086070895.0, -2330016269.0, -1967339094.0, -3404057799.0, -1111999423.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -14042290100.0}, {"desc": "Pembayaran Hutang Lain", "category": "Cash out for Account Payable", "dk": "K", "monthly": [-54946715.0, 0.0, 0.0, -32154955.0, -666000000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -753101670.0}, {"desc": "Pembayaran Biaya Lain", "category": "Cash out for Others", "dk": "K", "monthly": [-157203611.0, -52653755.0, -29695568.0, -29717829.0, -74598023.0, -28100000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -371968786.0}, {"desc": "Pengeluaran untuk Pajak", "category": "Cash out for OPEX", "dk": "K", "monthly": [-9821589.0, -7549931.0, -9784794.0, -17149616.0, -7393802.0, -8858433.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -60558165.0}, {"desc": "Pengeluaran untuk biaya marketing", "category": "Cash out for Marketing Expense", "dk": "K", "monthly": [-564809643.0, -697710685.0, -840931626.0, -633129071.0, -527122775.0, -270595617.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -3534299417.0}, {"desc": "Pengeluaran Lain", "category": "Cash out for Others", "dk": "K", "monthly": [-6120000.0, -32630000.0, 25165000.0, -190782500.0, 212019500.0, -28093839.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -20441839.0}], "monthly": [-1678412956.0, 177903962.0, -955381322.0, -1070825085.0, -2100459948.0, -341681641.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, "investasi": {"items": [], "monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, "pendanaan": {"items": [{"desc": "Penerimaan dari Pinjaman Bank", "category": "Cash in/out from loan", "dk": "D", "monthly": [7700000000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": 7700000000.0}, {"desc": "Penerimaan dari Pinjaman Pihak Lain", "category": "Cash in/out from loan", "dk": "D", "monthly": [580000000.0, 0.0, 300000000.0, 921400000.0, 404875000.0, 385625000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": 2591900000.0}, {"desc": "Pembayaran kepada Investor", "category": "Cash in/out from loan", "dk": "K", "monthly": [-846718642.0, -482471273.0, -199137646.0, 0.0, -52200361.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -1580527922.0}, {"desc": "Pembayaran Pinjaman Lain", "category": "Cash in/out from loan", "dk": "K", "monthly": [-750000000.0, 0.0, 0.0, -150000000.0, -1521400000.0, -40000000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "total": -2461400000.0}], "monthly": [6683281358.0, -482471273.0, 100862354.0, 771400000.0, -1168725361.0, 345625000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, "net_change_monthly": [5004868402.0, -304567311.0, -854518968.0, -299425085.0, -3269185309.0, 3943359.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "beginning_cash": [445874328.0, 5450742730.0, 5146175419.0, 4291656450.0, 3992231366.0, 723046057.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0], "ending_cash": [5450742730.0, 5146175419.0, 4291656450.0, 3992231366.0, 723046057.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0, 726989416.0]}, "variance": {"last_actual_date": "2026-06-12", "monthly": [{"month": "Jan", "is_elapsed": true, "is_partial": false, "days_elapsed": 31, "days_total": 31, "active_days": 20, "budget_full": {"bruto": 3680214414.0, "diskon": 967298208.0, "netto": 2712916206.0, "cost": 1903686812.0, "gp": 809229394.0}, "budget_prorated": {"bruto": 3680214414.0, "diskon": 967298208.0, "netto": 2712916206.0, "cost": 1903686812.0, "gp": 809229394.0}, "real": {"bruto": 3678581300.0, "diskon": 955939668.0, "netto": 2722641634.0, "cost": 1884605348.0, "gp": 838036286.0}, "variance": {"bruto": -1633114.0, "diskon": -11358540.0, "netto": 9725428.0, "cost": -19081464.0, "gp": 28806892.0}, "achievement_pct": {"bruto": 99.95562448769867, "diskon": 98.82574578283516, "netto": 100.35848611831398, "cost": 98.99765739407769, "gp": 103.55979308383847}}, {"month": "Feb", "is_elapsed": true, "is_partial": false, "days_elapsed": 28, "days_total": 28, "active_days": 20, "budget_full": {"bruto": 3302721352.0, "diskon": 746362484.0, "netto": 2556358868.0, "cost": 1782094440.0, "gp": 774264428.0}, "budget_prorated": {"bruto": 3302721352.0, "diskon": 746362484.0, "netto": 2556358868.0, "cost": 1782094440.0, "gp": 774264428.0}, "real": {"bruto": 3318073800.0, "diskon": 744073237.0, "netto": 2574000564.0, "cost": 1743798827.0, "gp": 830201737.0}, "variance": {"bruto": 15352448.0, "diskon": -2289247.0, "netto": 17641696.0, "cost": -38295613.0, "gp": 55937309.0}, "achievement_pct": {"bruto": 100.46484236372841, "diskon": 99.69327946553112, "netto": 100.69011030574914, "cost": 97.85108958647555, "gp": 107.22457431558512}}, {"month": "Mar", "is_elapsed": true, "is_partial": false, "days_elapsed": 31, "days_total": 31, "active_days": 18, "budget_full": {"bruto": 2191552843.0, "diskon": 503713668.0, "netto": 1687839144.0, "cost": 1191463300.0, "gp": 496375844.0}, "budget_prorated": {"bruto": 2191552843.0, "diskon": 503713668.0, "netto": 1687839144.0, "cost": 1191463300.0, "gp": 496375844.0}, "real": {"bruto": 2176248841.0, "diskon": 490884213.0, "netto": 1685364629.0, "cost": 1165700796.0, "gp": 519663830.0}, "variance": {"bruto": -15304002.0, "diskon": -12829455.0, "netto": -2474515.0, "cost": -25762504.0, "gp": 23287986.0}, "achievement_pct": {"bruto": 99.30168227296538, "diskon": 97.45302622997318, "netto": 99.85339153859557, "cost": 97.83774254733653, "gp": 104.6916034052616}}, {"month": "Apr", "is_elapsed": true, "is_partial": false, "days_elapsed": 30, "days_total": 30, "active_days": 21, "budget_full": {"bruto": 4057620660.0, "diskon": 1384666680.0, "netto": 2672954010.0, "cost": 1710469020.0, "gp": 962484960.0}, "budget_prorated": {"bruto": 4057620660.0, "diskon": 1384666680.0, "netto": 2672954010.0, "cost": 1710469020.0, "gp": 962484960.0}, "real": {"bruto": 2710851882.0, "diskon": 736409361.0, "netto": 1974442524.0, "cost": 1327116888.0, "gp": 647325635.0}, "variance": {"bruto": -1346768778.0, "diskon": -648257319.0, "netto": -698511486.0, "cost": -383352132.0, "gp": -315159325.0}, "achievement_pct": {"bruto": 66.80890376775635, "diskon": 53.18315025822676, "netto": 73.86743343182324, "cost": 77.58789387486247, "gp": 67.25566236380462}}, {"month": "Mei", "is_elapsed": true, "is_partial": false, "days_elapsed": 31, "days_total": 31, "active_days": 19, "budget_full": {"bruto": 5331604006.0, "diskon": 1620800001.0, "netto": 3710804005.0, "cost": 2190206017.0, "gp": 1520597988.0}, "budget_prorated": {"bruto": 5331604006.0, "diskon": 1620800001.0, "netto": 3710804005.0, "cost": 2190206017.0, "gp": 1520597988.0}, "real": {"bruto": 1958427562.0, "diskon": 675102342.0, "netto": 1283325222.0, "cost": 821090048.0, "gp": 462235176.0}, "variance": {"bruto": -3373176444.0, "diskon": -945697659.0, "netto": -2427478783.0, "cost": -1369115969.0, "gp": -1058362812.0}, "achievement_pct": {"bruto": 36.7324272357072, "diskon": 41.65241495455799, "netto": 34.58348164631778, "cost": 37.48916958618692, "gp": 30.398249875890276}}, {"month": "Jun", "is_elapsed": true, "is_partial": true, "days_elapsed": 12, "days_total": 30, "active_days": 9, "budget_full": {"bruto": 6562953990.0, "diskon": 1706994990.0, "netto": 4855959000.0, "cost": 2864008710.0, "gp": 1991950290.0}, "budget_prorated": {"bruto": 2625181596.0, "diskon": 682797996.0, "netto": 1942383600.0, "cost": 1145603484.0, "gp": 796780116.0}, "real": {"bruto": 466791665.0, "diskon": 164340544.0, "netto": 302451122.0, "cost": 191178298.0, "gp": 111272823.0}, "variance": {"bruto": -2158389931.0, "diskon": -518457452.0, "netto": -1639932478.0, "cost": -954425186.0, "gp": -685507293.0}, "achievement_pct": {"bruto": 17.781309518215895, "diskon": 24.0686916134417, "netto": 15.571132396299062, "cost": 16.687999004025375, "gp": 13.96531122772145}}, {"month": "Jul", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5409208011.0, "diskon": 1520999996.0, "netto": 3888208015.0, "cost": 2650503286.0, "gp": 1237704729.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Agu", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5576203988.0, "diskon": 1541699998.0, "netto": 4034503990.0, "cost": 2682997424.0, "gp": 1351506597.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Sep", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 30, "active_days": 0, "budget_full": {"bruto": 5576204010.0, "diskon": 1541700000.0, "netto": 4034504010.0, "cost": 2682997410.0, "gp": 1351506600.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Okt", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5343337320.0, "diskon": 1560593320.0, "netto": 3782744000.0, "cost": 2558918374.0, "gp": 1223825626.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Nov", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 30, "active_days": 0, "budget_full": {"bruto": 5664337320.0, "diskon": 1618793340.0, "netto": 4045544010.0, "cost": 2687789370.0, "gp": 1357754640.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Des", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5664337329.0, "diskon": 1618793340.0, "netto": 4045543989.0, "cost": 2687789373.0, "gp": 1357754647.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}], "ytd_budget": {"bruto": 21188894871.0, "diskon": 5905639037.0, "netto": 15283255833.0, "cost": 9923523073.0, "gp": 5359732730.0}, "ytd_real": {"bruto": 14308975050.0, "diskon": 3766749365.0, "netto": 10542225695.0, "cost": 7133490205.0, "gp": 3408735487.0}, "ytd_variance": {"bruto": -6879919821.0, "diskon": -2138889672.0, "netto": -4741030138.0, "cost": -2790032868.0, "gp": -1950997243.0}, "ytd_achievement": {"bruto": 67.53053963934596, "diskon": 63.78224848150332, "netto": 68.97892576159691, "cost": 71.88465379204747, "gp": 63.598982611955726}, "daily_combo": [{"date": "2026-01-01", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-02", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-03", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-04", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-05", "real_netto": 26639750.0, "budget_netto": 87513426.0, "real_bruto": 42585000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-06", "real_netto": 89115601.0, "budget_netto": 87513426.0, "real_bruto": 147083500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-07", "real_netto": 184332075.0, "budget_netto": 87513426.0, "real_bruto": 255018900.0, "budget_bruto": 118716594.0}, {"date": "2026-01-08", "real_netto": 50658050.0, "budget_netto": 87513426.0, "real_bruto": 81050500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-09", "real_netto": 65003598.0, "budget_netto": 87513426.0, "real_bruto": 83749300.0, "budget_bruto": 118716594.0}, {"date": "2026-01-10", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-11", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-12", "real_netto": 44469600.0, "budget_netto": 87513426.0, "real_bruto": 71462500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-13", "real_netto": 117075641.0, "budget_netto": 87513426.0, "real_bruto": 191574300.0, "budget_bruto": 118716594.0}, {"date": "2026-01-14", "real_netto": 49317095.0, "budget_netto": 87513426.0, "real_bruto": 80285800.0, "budget_bruto": 118716594.0}, {"date": "2026-01-15", "real_netto": 71707525.0, "budget_netto": 87513426.0, "real_bruto": 102526000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-16", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-17", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-18", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-19", "real_netto": 25719860.0, "budget_netto": 87513426.0, "real_bruto": 33665500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-20", "real_netto": 66204953.0, "budget_netto": 87513426.0, "real_bruto": 102370400.0, "budget_bruto": 118716594.0}, {"date": "2026-01-21", "real_netto": 409814700.0, "budget_netto": 87513426.0, "real_bruto": 431276000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-22", "real_netto": 197334945.0, "budget_netto": 87513426.0, "real_bruto": 260379500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-23", "real_netto": 36769670.0, "budget_netto": 87513426.0, "real_bruto": 59446000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-24", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-25", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-26", "real_netto": 351564738.0, "budget_netto": 87513426.0, "real_bruto": 443218000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-27", "real_netto": 81997050.0, "budget_netto": 87513426.0, "real_bruto": 136035500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-28", "real_netto": 194144220.0, "budget_netto": 87513426.0, "real_bruto": 317536400.0, "budget_bruto": 118716594.0}, {"date": "2026-01-29", "real_netto": 238245218.0, "budget_netto": 87513426.0, "real_bruto": 305433600.0, "budget_bruto": 118716594.0}, {"date": "2026-01-30", "real_netto": 400666345.0, "budget_netto": 87513426.0, "real_bruto": 505510600.0, "budget_bruto": 118716594.0}, {"date": "2026-01-31", "real_netto": 21861000.0, "budget_netto": 87513426.0, "real_bruto": 28374000.0, "budget_bruto": 118716594.0}, {"date": "2026-02-01", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-02", "real_netto": 44132250.0, "budget_netto": 91298531.0, "real_bruto": 72135000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-03", "real_netto": 112503930.0, "budget_netto": 91298531.0, "real_bruto": 167922000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-04", "real_netto": 253687650.0, "budget_netto": 91298531.0, "real_bruto": 312303000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-05", "real_netto": 47189380.0, "budget_netto": 91298531.0, "real_bruto": 67799900.0, "budget_bruto": 117954334.0}, {"date": "2026-02-06", "real_netto": 43363600.0, "budget_netto": 91298531.0, "real_bruto": 71411000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-07", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-08", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-09", "real_netto": 72115359.0, "budget_netto": 91298531.0, "real_bruto": 128115500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-10", "real_netto": 276958134.0, "budget_netto": 91298531.0, "real_bruto": 313991600.0, "budget_bruto": 117954334.0}, {"date": "2026-02-11", "real_netto": 69704700.0, "budget_netto": 91298531.0, "real_bruto": 80045500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-12", "real_netto": 108212050.0, "budget_netto": 91298531.0, "real_bruto": 142947500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-13", "real_netto": 187782970.0, "budget_netto": 91298531.0, "real_bruto": 229597700.0, "budget_bruto": 117954334.0}, {"date": "2026-02-14", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-15", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-16", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-17", "real_netto": 7535310.0, "budget_netto": 91298531.0, "real_bruto": 15015000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-18", "real_netto": 224390277.0, "budget_netto": 91298531.0, "real_bruto": 263810700.0, "budget_bruto": 117954334.0}, {"date": "2026-02-19", "real_netto": 109260325.0, "budget_netto": 91298531.0, "real_bruto": 140038500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-20", "real_netto": 93357230.0, "budget_netto": 91298531.0, "real_bruto": 139803000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-21", "real_netto": 142398000.0, "budget_netto": 91298531.0, "real_bruto": 142398000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-22", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-23", "real_netto": 120008605.0, "budget_netto": 91298531.0, "real_bruto": 186498800.0, "budget_bruto": 117954334.0}, {"date": "2026-02-24", "real_netto": 284950953.0, "budget_netto": 91298531.0, "real_bruto": 364884800.0, "budget_bruto": 117954334.0}, {"date": "2026-02-25", "real_netto": 40561750.0, "budget_netto": 91298531.0, "real_bruto": 64918500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-26", "real_netto": 40386900.0, "budget_netto": 91298531.0, "real_bruto": 50245500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-27", "real_netto": 295501191.0, "budget_netto": 91298531.0, "real_bruto": 364192300.0, "budget_bruto": 117954334.0}, {"date": "2026-02-28", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-03-01", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-02", "real_netto": -3466576.0, "budget_netto": 54446424.0, "real_bruto": -2987846.0, "budget_bruto": 70695253.0}, {"date": "2026-03-03", "real_netto": 19046975.0, "budget_netto": 54446424.0, "real_bruto": 30648000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-04", "real_netto": 23934563.0, "budget_netto": 54446424.0, "real_bruto": 30935500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-05", "real_netto": 237062483.0, "budget_netto": 54446424.0, "real_bruto": 308142200.0, "budget_bruto": 70695253.0}, {"date": "2026-03-06", "real_netto": 36249607.0, "budget_netto": 54446424.0, "real_bruto": 68773707.0, "budget_bruto": 70695253.0}, {"date": "2026-03-07", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-08", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-09", "real_netto": 42804316.0, "budget_netto": 54446424.0, "real_bruto": 75166400.0, "budget_bruto": 70695253.0}, {"date": "2026-03-10", "real_netto": 88438148.0, "budget_netto": 54446424.0, "real_bruto": 167119800.0, "budget_bruto": 70695253.0}, {"date": "2026-03-11", "real_netto": 31564062.0, "budget_netto": 54446424.0, "real_bruto": 50737500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-12", "real_netto": 172805845.0, "budget_netto": 54446424.0, "real_bruto": 205561800.0, "budget_bruto": 70695253.0}, {"date": "2026-03-13", "real_netto": 16061391.0, "budget_netto": 54446424.0, "real_bruto": 35703000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-14", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-15", "real_netto": 270000000.0, "budget_netto": 54446424.0, "real_bruto": 270000000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-16", "real_netto": 160189789.0, "budget_netto": 54446424.0, "real_bruto": 194114480.0, "budget_bruto": 70695253.0}, {"date": "2026-03-17", "real_netto": 55688450.0, "budget_netto": 54446424.0, "real_bruto": 78658800.0, "budget_bruto": 70695253.0}, {"date": "2026-03-18", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-19", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-20", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-21", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-22", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-23", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-24", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-25", "real_netto": 3995600.0, "budget_netto": 54446424.0, "real_bruto": 7009000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-26", "real_netto": 209310100.0, "budget_netto": 54446424.0, "real_bruto": 225927500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-27", "real_netto": 27967000.0, "budget_netto": 54446424.0, "real_bruto": 45998500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-28", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-29", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-30", "real_netto": 42702356.0, "budget_netto": 54446424.0, "real_bruto": 71727900.0, "budget_bruto": 70695253.0}, {"date": "2026-03-31", "real_netto": 251010520.0, "budget_netto": 54446424.0, "real_bruto": 313012600.0, "budget_bruto": 70695253.0}, {"date": "2026-04-01", "real_netto": 19693948.0, "budget_netto": 89098467.0, "real_bruto": 30481000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-02", "real_netto": 45938800.0, "budget_netto": 89098467.0, "real_bruto": 73338000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-03", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-04", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-05", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-06", "real_netto": 46413264.0, "budget_netto": 89098467.0, "real_bruto": 72937700.0, "budget_bruto": 135254022.0}, {"date": "2026-04-07", "real_netto": 29435425.0, "budget_netto": 89098467.0, "real_bruto": 49052500.0, "budget_bruto": 135254022.0}, {"date": "2026-04-08", "real_netto": 16568250.0, "budget_netto": 89098467.0, "real_bruto": 26845000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-09", "real_netto": 13710250.0, "budget_netto": 89098467.0, "real_bruto": 19410000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-10", "real_netto": 73177255.0, "budget_netto": 89098467.0, "real_bruto": 107347384.0, "budget_bruto": 135254022.0}, {"date": "2026-04-11", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-12", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-13", "real_netto": 119591905.0, "budget_netto": 89098467.0, "real_bruto": 172552300.0, "budget_bruto": 135254022.0}, {"date": "2026-04-14", "real_netto": 26916424.0, "budget_netto": 89098467.0, "real_bruto": 45213500.0, "budget_bruto": 135254022.0}, {"date": "2026-04-15", "real_netto": 20435675.0, "budget_netto": 89098467.0, "real_bruto": 30383500.0, "budget_bruto": 135254022.0}, {"date": "2026-04-16", "real_netto": 106026369.0, "budget_netto": 89098467.0, "real_bruto": 144274700.0, "budget_bruto": 135254022.0}, {"date": "2026-04-17", "real_netto": 136172557.0, "budget_netto": 89098467.0, "real_bruto": 171148660.0, "budget_bruto": 135254022.0}, {"date": "2026-04-18", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-19", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-20", "real_netto": 46274348.0, "budget_netto": 89098467.0, "real_bruto": 89059700.0, "budget_bruto": 135254022.0}, {"date": "2026-04-21", "real_netto": 58789358.0, "budget_netto": 89098467.0, "real_bruto": 96447800.0, "budget_bruto": 135254022.0}, {"date": "2026-04-22", "real_netto": 68130813.0, "budget_netto": 89098467.0, "real_bruto": 92156300.0, "budget_bruto": 135254022.0}, {"date": "2026-04-23", "real_netto": 58091761.0, "budget_netto": 89098467.0, "real_bruto": 78998600.0, "budget_bruto": 135254022.0}, {"date": "2026-04-24", "real_netto": 56284011.0, "budget_netto": 89098467.0, "real_bruto": 90356740.0, "budget_bruto": 135254022.0}, {"date": "2026-04-25", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-26", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-27", "real_netto": 75695640.0, "budget_netto": 89098467.0, "real_bruto": 115951400.0, "budget_bruto": 135254022.0}, {"date": "2026-04-28", "real_netto": 51030045.0, "budget_netto": 89098467.0, "real_bruto": 84177800.0, "budget_bruto": 135254022.0}, {"date": "2026-04-29", "real_netto": 349639081.0, "budget_netto": 89098467.0, "real_bruto": 409623198.0, "budget_bruto": 135254022.0}, {"date": "2026-04-30", "real_netto": 556427345.0, "budget_netto": 89098467.0, "real_bruto": 711096100.0, "budget_bruto": 135254022.0}, {"date": "2026-05-01", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-02", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-03", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-04", "real_netto": 35926193.0, "budget_netto": 119703355.0, "real_bruto": 60044000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-05", "real_netto": 55810370.0, "budget_netto": 119703355.0, "real_bruto": 90656900.0, "budget_bruto": 171987226.0}, {"date": "2026-05-06", "real_netto": 249250473.0, "budget_netto": 119703355.0, "real_bruto": 407339900.0, "budget_bruto": 171987226.0}, {"date": "2026-05-07", "real_netto": 9717000.0, "budget_netto": 119703355.0, "real_bruto": 16145500.0, "budget_bruto": 171987226.0}, {"date": "2026-05-08", "real_netto": 10817050.0, "budget_netto": 119703355.0, "real_bruto": 13113100.0, "budget_bruto": 171987226.0}, {"date": "2026-05-09", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-10", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-11", "real_netto": 17925531.0, "budget_netto": 119703355.0, "real_bruto": 28518902.0, "budget_bruto": 171987226.0}, {"date": "2026-05-12", "real_netto": 16002205.0, "budget_netto": 119703355.0, "real_bruto": 24892740.0, "budget_bruto": 171987226.0}, {"date": "2026-05-13", "real_netto": 73905234.0, "budget_netto": 119703355.0, "real_bruto": 108301000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-14", "real_netto": 65803859.0, "budget_netto": 119703355.0, "real_bruto": 105664300.0, "budget_bruto": 171987226.0}, {"date": "2026-05-15", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-16", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-17", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-18", "real_netto": 90646156.0, "budget_netto": 119703355.0, "real_bruto": 165941200.0, "budget_bruto": 171987226.0}, {"date": "2026-05-19", "real_netto": 49705850.0, "budget_netto": 119703355.0, "real_bruto": 84382500.0, "budget_bruto": 171987226.0}, {"date": "2026-05-20", "real_netto": 10470880.0, "budget_netto": 119703355.0, "real_bruto": 15515100.0, "budget_bruto": 171987226.0}, {"date": "2026-05-21", "real_netto": 50124290.0, "budget_netto": 119703355.0, "real_bruto": 70847200.0, "budget_bruto": 171987226.0}, {"date": "2026-05-22", "real_netto": 16438800.0, "budget_netto": 119703355.0, "real_bruto": 23306000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-23", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-24", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-25", "real_netto": 200180987.0, "budget_netto": 119703355.0, "real_bruto": 263903400.0, "budget_bruto": 171987226.0}, {"date": "2026-05-26", "real_netto": 67266444.0, "budget_netto": 119703355.0, "real_bruto": 109955390.0, "budget_bruto": 171987226.0}, {"date": "2026-05-27", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-28", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-29", "real_netto": 210306237.0, "budget_netto": 119703355.0, "real_bruto": 271080430.0, "budget_bruto": 171987226.0}, {"date": "2026-05-30", "real_netto": 9773663.0, "budget_netto": 119703355.0, "real_bruto": 26730000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-31", "real_netto": 43254000.0, "budget_netto": 119703355.0, "real_bruto": 72090000.0, "budget_bruto": 171987226.0}, {"date": "2026-06-01", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-02", "real_netto": 12633064.0, "budget_netto": 161865300.0, "real_bruto": 28549900.0, "budget_bruto": 218765133.0}, {"date": "2026-06-03", "real_netto": 8040700.0, "budget_netto": 161865300.0, "real_bruto": 13297000.0, "budget_bruto": 218765133.0}, {"date": "2026-06-04", "real_netto": 66543800.0, "budget_netto": 161865300.0, "real_bruto": 99773000.0, "budget_bruto": 218765133.0}, {"date": "2026-06-05", "real_netto": 34661930.0, "budget_netto": 161865300.0, "real_bruto": 56564300.0, "budget_bruto": 218765133.0}, {"date": "2026-06-06", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-07", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-08", "real_netto": 52933060.0, "budget_netto": 161865300.0, "real_bruto": 77004500.0, "budget_bruto": 218765133.0}, {"date": "2026-06-09", "real_netto": 44629970.0, "budget_netto": 161865300.0, "real_bruto": 66578800.0, "budget_bruto": 218765133.0}, {"date": "2026-06-10", "real_netto": 22603635.0, "budget_netto": 161865300.0, "real_bruto": 31125700.0, "budget_bruto": 218765133.0}, {"date": "2026-06-11", "real_netto": 37820128.0, "budget_netto": 161865300.0, "real_bruto": 56163900.0, "budget_bruto": 218765133.0}, {"date": "2026-06-12", "real_netto": 22584835.0, "budget_netto": 161865300.0, "real_bruto": 37734565.0, "budget_bruto": 218765133.0}, {"date": "2026-06-13", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-14", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-15", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-16", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-17", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-18", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-19", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-20", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-21", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-22", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-23", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-24", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-25", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-26", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-27", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-28", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-29", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-30", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-07-01", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-02", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-03", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-04", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-05", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-06", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-07", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-08", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-09", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-10", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-11", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-12", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-13", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-14", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-15", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-16", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-17", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-18", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-19", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-20", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-21", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-22", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-23", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-24", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-25", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-26", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-27", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-28", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-29", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-30", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-31", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-08-01", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-02", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-03", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-04", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-05", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-06", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-07", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-08", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-09", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-10", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-11", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-12", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-13", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-14", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-15", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-16", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-17", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-18", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-19", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-20", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-21", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-22", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-23", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-24", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-25", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-26", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-27", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-28", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-29", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-30", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-31", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-09-01", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-02", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-03", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-04", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-05", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-06", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-07", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-08", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-09", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-10", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-11", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-12", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-13", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-14", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-15", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-16", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-17", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-18", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-19", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-20", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-21", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-22", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-23", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-24", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-25", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-26", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-27", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-28", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-29", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-30", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-10-01", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-02", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-03", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-04", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-05", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-06", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-07", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-08", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-09", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-10", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-11", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-12", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-13", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-14", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-15", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-16", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-17", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-18", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-19", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-20", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-21", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-22", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-23", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-24", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-25", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-26", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-27", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-28", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-29", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-30", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-31", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-11-01", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-02", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-03", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-04", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-05", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-06", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-07", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-08", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-09", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-10", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-11", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-12", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-13", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-14", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-15", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-16", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-17", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-18", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-19", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-20", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-21", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-22", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-23", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-24", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-25", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-26", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-27", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-28", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-29", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-30", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-12-01", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-02", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-03", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-04", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-05", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-06", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-07", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-08", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-09", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-10", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-11", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-12", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-13", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-14", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-15", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-16", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-17", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-18", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-19", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-20", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-21", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-22", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-23", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-24", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-25", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-26", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-27", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-28", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-29", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-30", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-31", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}]}};
+const RAW = DATA.omzet;
+const VAR = DATA.variance;
+
+const fmtRp = (n, opts={}) => {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (opts.compact) {
+    if (abs >= 1e9) return sign + 'Rp ' + (abs/1e9).toFixed(2).replace(/\.00$/,'') + ' M';
+    if (abs >= 1e6) return sign + 'Rp ' + (abs/1e6).toFixed(1).replace(/\.0$/,'') + ' jt';
+  }
+  return sign + 'Rp ' + abs.toLocaleString('id-ID', {maximumFractionDigits:0});
+};
+
+// ======================= NAV TABS =======================
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-'+tab.dataset.view).classList.add('active');
+    if (tab.dataset.view === 'bvr' && bvrChart) bvrChart.resize();
+    if (tab.dataset.view === 'real' && dailyChart) dailyChart.resize();
+    if (tab.dataset.view === 'saldo') { if (saldoMonthlyChart) saldoMonthlyChart.resize(); if (saldoDailyChart) saldoDailyChart.resize(); }
+    if (tab.dataset.view === 'cashflow' && cashflowActivityChart) cashflowActivityChart.resize();
+  });
+});
+
+// ======================= VIEW: BUDGET VS REALISASI =======================
+const elapsedMonths = VAR.monthly.filter(m => m.is_elapsed);
+
+function achvStatus(pct) {
+  if (pct === null) return {cls:'flat', label:'-'};
+  if (pct >= 95) return {cls:'good', label:'Tercapai'};
+  if (pct >= 80) return {cls:'warn', label:'Mendekati'};
+  return {cls:'bad', label:'Di Bawah Target'};
+}
+
+// --- KPI BVR ---
+const ytdB = VAR.ytd_budget, ytdR = VAR.ytd_real, ytdV = VAR.ytd_variance, ytdA = VAR.ytd_achievement;
+const kpiRowBvr = document.getElementById('kpiRowBvr');
+const overallStatus = achvStatus(ytdA.bruto);
+kpiRowBvr.innerHTML = `
+  <div class="kpi">
+    <div class="label">Budget Bruto (YTD, prorata)</div>
+    <div class="value">${fmtRp(ytdB.bruto, {compact:true})}</div>
+    <div class="delta flat">s.d ${new Date(VAR.last_actual_date).toLocaleDateString('id-ID',{day:'numeric',month:'long'})}</div>
+  </div>
+  <div class="kpi accent">
+    <div class="label">Realisasi Bruto (YTD)</div>
+    <div class="value">${fmtRp(ytdR.bruto, {compact:true})}</div>
+    <div class="delta ${ytdV.bruto>=0?'up':'down'}">${ytdV.bruto>=0?'+':''}${fmtRp(ytdV.bruto, {compact:true})} vs budget</div>
+  </div>
+  <div class="kpi">
+    <div class="label">% Achievement Bruto</div>
+    <div class="value">${ytdA.bruto.toFixed(1)}%</div>
+    <div class="delta"><span class="achv-badge ${overallStatus.cls}">${overallStatus.label}</span></div>
+  </div>
+  <div class="kpi">
+    <div class="label">Gross Profit — Budget vs Real</div>
+    <div class="value">${fmtRp(ytdR.gp, {compact:true})}</div>
+    <div class="delta ${ytdA.gp>=95?'up':'down'}">${ytdA.gp.toFixed(1)}% dari budget ${fmtRp(ytdB.gp,{compact:true})}</div>
+  </div>
+`;
+
+// --- Chart BVR (bar budget vs real + line achievement%) ---
+const bvrCtx = document.getElementById('bvrChart').getContext('2d');
+const monthLabels = VAR.monthly.map(m => m.month);
+const budgetVals = VAR.monthly.map(m => m.is_elapsed ? m.budget_prorated.bruto : m.budget_full.bruto);
+const realVals = VAR.monthly.map(m => m.is_elapsed ? m.real.bruto : null);
+const achvVals = VAR.monthly.map(m => m.is_elapsed ? m.achievement_pct.bruto : null);
+
+const bvrChart = new Chart(bvrCtx, {
+  data: {
+    labels: monthLabels,
+    datasets: [
+      {
+        type: 'bar', label: 'Budget', data: budgetVals,
+        backgroundColor: 'rgba(221,190,140,0.55)', borderRadius: 3, order: 2,
+        yAxisID: 'y',
+      },
+      {
+        type: 'bar', label: 'Realisasi', data: realVals,
+        backgroundColor: '#7B96A8', borderRadius: 3, order: 2,
+        yAxisID: 'y',
+      },
+      {
+        type: 'line', label: '% Achievement', data: achvVals,
+        borderColor: '#C97A6B', backgroundColor: '#C97A6B', borderWidth: 2,
+        pointRadius: 4, pointBackgroundColor: '#C97A6B', tension: 0.2,
+        yAxisID: 'y1', order: 1, spanGaps: true,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+        titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+        titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+        bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 },
+        padding: 10,
+        callbacks: {
+          label: (item) => {
+            if (item.dataset.label === '% Achievement') return ' ' + item.raw?.toFixed(1) + '%';
+            return ' ' + item.dataset.label + ': ' + fmtRp(item.raw);
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:10.5} } },
+      y: {
+        position: 'left', grid: { color:'rgba(58,53,48,0.06)' },
+        ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) }
+      },
+      y1: {
+        position: 'right', min: 0, max: 130, grid: { display:false },
+        ticks: { color:'#C97A6B', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>v+'%' }
+      }
+    }
+  }
+});
+
+// --- Variance Table ---
+const varBody = document.getElementById('varianceBody');
+varBody.innerHTML = VAR.monthly.map(m => {
+  if (!m.is_elapsed) {
+    return `<tr class="future"><td>${m.month} 2026</td><td>${fmtRp(m.budget_full.bruto)}</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+  }
+  const bud = m.budget_prorated.bruto;
+  const real = m.real.bruto;
+  const variance = m.variance.bruto;
+  const achv = m.achievement_pct.bruto;
+  const status = achvStatus(achv);
+  const partialNote = m.is_partial ? ` <span style="color:var(--ink-faint); font-style:italic;">(${m.days_elapsed}/${m.days_total} hari)</span>` : '';
+  return `<tr>
+    <td>${m.month} 2026${partialNote}</td>
+    <td>${fmtRp(bud)}</td>
+    <td>${fmtRp(real)}</td>
+    <td class="variance-cell ${variance>=0?'pos':'neg'}">${variance>=0?'+':''}${fmtRp(variance)}</td>
+    <td>${achv.toFixed(1)}%</td>
+    <td><span class="achv-badge ${status.cls}">${status.label}</span></td>
+  </tr>`;
+}).join('');
+
+document.getElementById('ftBudget').textContent = fmtRp(ytdB.bruto);
+document.getElementById('ftReal').textContent = fmtRp(ytdR.bruto);
+const ftVarEl = document.getElementById('ftVariance');
+ftVarEl.textContent = (ytdV.bruto>=0?'+':'') + fmtRp(ytdV.bruto);
+ftVarEl.className = 'variance-cell ' + (ytdV.bruto>=0?'pos':'neg');
+document.getElementById('ftAchv').textContent = ytdA.bruto.toFixed(1) + '%';
+
+// --- Insights BVR ---
+const bestAchv = elapsedMonths.reduce((a,b)=> (b.achievement_pct.bruto > a.achievement_pct.bruto && !b.is_partial) ? b : a, elapsedMonths[0]);
+const worstAchv = elapsedMonths.filter(m=>!m.is_partial).reduce((a,b)=> b.achievement_pct.bruto < a.achievement_pct.bruto ? b : a);
+const fullMonths = elapsedMonths.filter(m=>!m.is_partial);
+const decliningTrend = fullMonths.length >= 2 && fullMonths[fullMonths.length-1].achievement_pct.bruto < fullMonths[0].achievement_pct.bruto;
+
+document.getElementById('insightStripBvr').innerHTML = `
+  <div class="insight">
+    <div class="tag">Bulan Terbaik</div>
+    <div class="txt"><b>${bestAchv.month}</b> mencatat achievement tertinggi sebesar <b>${bestAchv.achievement_pct.bruto.toFixed(1)}%</b> dari budget.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Bulan Terlemah</div>
+    <div class="txt"><b>${worstAchv.month}</b> berada di <b>${worstAchv.achievement_pct.bruto.toFixed(1)}%</b> dari budget — gap terbesar di antara bulan penuh.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Tren Achievement</div>
+    <div class="txt">${decliningTrend ? `Achievement <b>menurun</b> dari ${fullMonths[0].month} (${fullMonths[0].achievement_pct.bruto.toFixed(0)}%) ke ${fullMonths[fullMonths.length-1].month} (${fullMonths[fullMonths.length-1].achievement_pct.bruto.toFixed(0)}%). Perlu ditelaah penyebabnya.` : `Performa relatif terjaga sepanjang bulan-bulan yang sudah berjalan penuh.`}</div>
+  </div>
+`;
+
+// ======================= VIEW: DETAIL REALISASI =======================
+const kpiRow = document.getElementById('kpiRow');
+const ytd = RAW.ytd;
+const gpMargin = (ytd.gp / ytd.netto * 100).toFixed(1);
+const discRate = (ytd.diskon / ytd.bruto * 100).toFixed(1);
+
+kpiRow.innerHTML = `
+  <div class="kpi accent">
+    <div class="label">Pendapatan Bruto (YTD)</div>
+    <div class="value">${fmtRp(ytd.bruto, {compact:true})}</div>
+    <div class="delta flat">${RAW.active_days_count} hari transaksi</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Pendapatan Netto (YTD)</div>
+    <div class="value">${fmtRp(ytd.netto, {compact:true})}</div>
+    <div class="delta flat">Rata-rata ${fmtRp(RAW.avg_daily_netto, {compact:true})}/hari aktif</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Gross Profit (YTD)</div>
+    <div class="value">${fmtRp(ytd.gp, {compact:true})}</div>
+    <div class="delta up">Margin GP ${gpMargin}%</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Total Diskon (YTD)</div>
+    <div class="value">${fmtRp(ytd.diskon, {compact:true})}</div>
+    <div class="delta down">${discRate}% dari Bruto</div>
+  </div>
+`;
+
+// --- Monthly table ---
+const tbody = document.getElementById('monthlyBody');
+const maxGp = Math.max(...RAW.monthly.map(m=>m.gp));
+tbody.innerHTML = RAW.monthly.map(m => {
+  const isEmpty = m.active_days === 0;
+  return `<tr class="${isEmpty?'empty':''}">
+    <td>${m.month} 2026</td>
+    <td>${isEmpty ? '—' : m.active_days}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.bruto)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.diskon)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.netto)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.cost)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.gp)}</td>
+  </tr>`;
+}).join('');
+
+document.getElementById('ftDays').textContent = RAW.active_days_count;
+document.getElementById('ftBruto').textContent = fmtRp(ytd.bruto);
+document.getElementById('ftDiskon').textContent = fmtRp(ytd.diskon);
+document.getElementById('ftNetto').textContent = fmtRp(ytd.netto);
+document.getElementById('ftCost').textContent = fmtRp(ytd.cost);
+document.getElementById('ftGp').textContent = fmtRp(ytd.gp);
+
+// --- Daily chart ---
+const ctx = document.getElementById('dailyChart').getContext('2d');
+let dailyChart;
+function buildChart(range) {
+  let data = RAW.daily;
+  if (range === 'ytd') data = RAW.daily.filter(d => d.date <= RAW.last_actual_date);
+  if (range === '90') data = RAW.daily.filter(d => d.date <= RAW.last_actual_date).slice(-90);
+
+  const labels = data.map(d => new Date(d.date).toLocaleDateString('id-ID', {day:'2-digit', month:'short'}));
+  const nettoData = data.map(d => d.netto);
+
+  if (dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: 'Pendapatan Netto', data: nettoData,
+      borderColor: '#C99A5B', backgroundColor: 'rgba(201,154,91,0.10)',
+      borderWidth: 1.8, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#C99A5B',
+      tension: 0.15, fill: true,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+          titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+          titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+          bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 }, padding: 10,
+          callbacks: { label: (item) => ' ' + fmtRp(item.raw) }
+        }
+      },
+      scales: {
+        x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, maxTicksLimit:12 } },
+        y: { grid: { color:'rgba(58,53,48,0.06)' }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) } }
+      }
+    }
+  });
+}
+buildChart('all');
+document.querySelectorAll('.chart-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chart-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    buildChart(btn.dataset.range);
+  });
+});
+
+// --- Calendar heatmap ---
+const calContainer = document.getElementById('calendarContainer');
+const monthNamesFull = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const nonZero = RAW.daily.filter(d=>d.netto>0).map(d=>d.netto).sort((a,b)=>a-b);
+function levelFor(val) {
+  if (val <= 0) return 0;
+  const p = nonZero.indexOf(val) / nonZero.length;
+  if (p < 0.25) return 1; if (p < 0.5) return 2; if (p < 0.75) return 3; return 4;
+}
+let calHtml = '';
+for (let m = 0; m < 12; m++) {
+  const monthData = RAW.daily.filter(d => new Date(d.date).getMonth() === m);
+  if (monthData.length === 0) continue;
+  calHtml += `<div class="cal-month-label">${monthNamesFull[m]} 2026</div><div class="cal-grid">`;
+  const firstDay = new Date(monthData[0].date).getDay();
+  const offset = (firstDay + 6) % 7;
+  for (let i=0;i<offset;i++) calHtml += `<div class="cal-day" style="visibility:hidden"></div>`;
+  monthData.forEach(d => {
+    const isFuture = d.date > RAW.last_actual_date;
+    const lvl = isFuture ? 0 : levelFor(d.netto);
+    const dt = new Date(d.date);
+    const tip = `${dt.getDate()} ${monthNamesFull[m].slice(0,3)}: ${isFuture ? 'belum terjadi' : fmtRp(d.netto)}`;
+    calHtml += `<div class="cal-day" data-level="${lvl}" ${isFuture?'data-future="1"':''} data-tip="${tip}"></div>`;
+  });
+  calHtml += `</div>`;
+}
+calContainer.innerHTML = calHtml;
+
+// --- Insights Realisasi ---
+const best = RAW.best_day;
+const monthsWithData = RAW.monthly.filter(m=>m.active_days>0);
+const bestMonth = monthsWithData.reduce((a,b)=> a.netto > b.netto ? a : b);
+const lowMonth = monthsWithData.reduce((a,b)=> a.netto < b.netto ? a : b);
+const zeroDays = RAW.daily.filter(d => d.date <= RAW.last_actual_date && d.bruto === 0).length;
+const dtBest = new Date(best.date).toLocaleDateString('id-ID', {day:'numeric', month:'long'});
+
+document.getElementById('insightStrip').innerHTML = `
+  <div class="insight">
+    <div class="tag">Hari Terbaik</div>
+    <div class="txt">Transaksi tertinggi tercatat pada <b>${dtBest}</b> dengan pendapatan netto <b>${fmtRp(best.netto, {compact:true})}</b>.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Tren Bulanan</div>
+    <div class="txt"><b>${bestMonth.month}</b> menjadi bulan dengan realisasi tertinggi (${fmtRp(bestMonth.netto,{compact:true})}), sementara <b>${lowMonth.month}</b> tercatat paling rendah di antara bulan aktif.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Pola Operasional</div>
+    <div class="txt">Tercatat <b>${zeroDays} hari tanpa transaksi</b> sejak awal tahun — kemungkinan hari tutup operasional/libur toko.</div>
+  </div>
+`;
+
+// ======================= VIEW: DATA SALDO =======================
+const SALDO = DATA.saldo;
+
+let saldoFilterFrom = SALDO.daily[0].date;
+let saldoFilterTo = SALDO.last_actual_date;
+let saldoPage = 1;
+const saldoPageSize = 30;
+let saldoMonthlyChart = null;
+let saldoDailyChart = null;
+
+const dateFromInput = document.getElementById('saldoDateFrom');
+const dateToInput = document.getElementById('saldoDateTo');
+dateFromInput.value = saldoFilterFrom;
+dateToInput.value = saldoFilterTo;
+dateFromInput.min = SALDO.daily[0].date;
+dateFromInput.max = SALDO.daily[SALDO.daily.length-1].date;
+dateToInput.min = SALDO.daily[0].date;
+dateToInput.max = SALDO.daily[SALDO.daily.length-1].date;
+
+function getSaldoFilteredDaily() {
+  return SALDO.daily.filter(d => d.date >= saldoFilterFrom && d.date <= saldoFilterTo);
+}
+
+function renderSaldoView() {
+  const filtered = getSaldoFilteredDaily();
+
+  const totalDebit = filtered.reduce((s,d)=>s+d.debit, 0);
+  const totalKredit = filtered.reduce((s,d)=>s+d.kredit, 0);
+  const netFlow = totalDebit - totalKredit;
+  const saldoTerakhir = filtered.length ? filtered[filtered.length-1].saldoAkhir : 0;
+
+  document.getElementById('kpiRowSaldo').innerHTML = `
+    <div class="kpi accent">
+      <div class="label">Saldo Akhir (terakhir di periode)</div>
+      <div class="value">${fmtRp(saldoTerakhir, {compact:true})}</div>
+      <div class="delta flat">per ${new Date(filtered.length?filtered[filtered.length-1].date:saldoFilterTo).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Total Cash In (Debit)</div>
+      <div class="value">${fmtRp(totalDebit, {compact:true})}</div>
+      <div class="delta flat">dalam periode terpilih</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Total Cash Out (Kredit)</div>
+      <div class="value">${fmtRp(totalKredit, {compact:true})}</div>
+      <div class="delta flat">dalam periode terpilih</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Net Cash Flow</div>
+      <div class="value">${fmtRp(netFlow, {compact:true})}</div>
+      <div class="delta ${netFlow>=0?'up':'down'}">${netFlow>=0?'Surplus':'Defisit'} periode ini</div>
+    </div>
+  `;
+
+  const monthlyCtx = document.getElementById('saldoMonthlyChart').getContext('2d');
+  if (saldoMonthlyChart) saldoMonthlyChart.destroy();
+  const monthlyForChart = SALDO.monthly.filter(m => m.activeDays > 0 || (m.debit !== 0 || m.kredit !== 0));
+  saldoMonthlyChart = new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+      labels: monthlyForChart.map(m => m.month + ' ' + m.year),
+      datasets: [
+        { label: 'Cash In (Debit)', data: monthlyForChart.map(m=>m.debit), backgroundColor: 'rgba(124,165,130,0.7)', borderRadius: 3 },
+        { label: 'Cash Out (Kredit)', data: monthlyForChart.map(m=>m.kredit), backgroundColor: 'rgba(201,122,107,0.7)', borderRadius: 3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+          titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+          titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+          bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 }, padding: 10,
+          callbacks: { label: (item) => ' ' + item.dataset.label + ': ' + fmtRp(item.raw) }
+        }
+      },
+      scales: {
+        x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:10} } },
+        y: { grid: { color:'rgba(58,53,48,0.06)' }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) } }
+      }
+    }
+  });
+
+  const dailyCtx = document.getElementById('saldoDailyChart').getContext('2d');
+  if (saldoDailyChart) saldoDailyChart.destroy();
+  const gradSaldo = dailyCtx.createLinearGradient(0,0,0,300);
+  gradSaldo.addColorStop(0, 'rgba(123,150,168,0.30)');
+  gradSaldo.addColorStop(1, 'rgba(123,150,168,0.02)');
+  saldoDailyChart = new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+      labels: filtered.map(d => new Date(d.date).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})),
+      datasets: [{
+        label: 'Saldo Akhir', data: filtered.map(d=>d.saldoAkhir),
+        borderColor: '#7B96A8', backgroundColor: gradSaldo,
+        borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#7B96A8',
+        tension: 0.3, fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+          titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+          titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+          bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 }, padding: 10,
+          callbacks: { label: (item) => ' Saldo: ' + fmtRp(item.raw) }
+        }
+      },
+      scales: {
+        x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9}, maxTicksLimit:14 } },
+        y: { grid: { color:'rgba(58,53,48,0.06)' }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) } }
+      }
+    }
+  });
+
+  const monthlyBody = document.getElementById('saldoMonthlyBody');
+  monthlyBody.innerHTML = SALDO.monthly.map(m => {
+    const isEmpty = m.debit === 0 && m.kredit === 0 && m.activeDays === 0;
+    return `<tr class="${isEmpty?'empty':''}">
+      <td>${m.month} ${m.year}</td>
+      <td>${isEmpty?'—':fmtRp(m.debit)}</td>
+      <td>${isEmpty?'—':fmtRp(m.kredit)}</td>
+      <td class="variance-cell ${m.net>=0?'pos':'neg'}">${isEmpty?'—':(m.net>=0?'+':'')+fmtRp(m.net)}</td>
+      <td>${fmtRp(m.saldoAkhir)}</td>
+      <td>${isEmpty?'—':m.activeDays}</td>
+    </tr>`;
+  }).join('');
+
+  renderSaldoDailyTable(filtered);
+
+  const bestInflow = [...filtered].sort((a,b)=>b.debit-a.debit)[0];
+  const worstOutflow = [...filtered].sort((a,b)=>b.kredit-a.kredit)[0];
+  const monthsWithNet = SALDO.monthly.filter(m => m.debit !== 0 || m.kredit !== 0);
+  const decliningMonths = monthsWithNet.filter(m => m.net < 0).length;
+
+  document.getElementById('insightStripSaldo').innerHTML = `
+    <div class="insight">
+      <div class="tag">Cash In Tertinggi</div>
+      <div class="txt">Pemasukan kas terbesar pada <b>${bestInflow ? new Date(bestInflow.date).toLocaleDateString('id-ID',{day:'numeric',month:'long'}) : '-'}</b> sebesar <b>${bestInflow ? fmtRp(bestInflow.debit,{compact:true}) : '-'}</b>.</div>
+    </div>
+    <div class="insight">
+      <div class="tag">Cash Out Tertinggi</div>
+      <div class="txt">Pengeluaran kas terbesar pada <b>${worstOutflow ? new Date(worstOutflow.date).toLocaleDateString('id-ID',{day:'numeric',month:'long'}) : '-'}</b> sebesar <b>${worstOutflow ? fmtRp(worstOutflow.kredit,{compact:true}) : '-'}</b>.</div>
+    </div>
+    <div class="insight">
+      <div class="tag">Tren Saldo</div>
+      <div class="txt">${decliningMonths > 0 ? `Tercatat <b>${decliningMonths} bulan</b> dengan net cash flow negatif — saldo cenderung menurun pada periode tersebut.` : `Net cash flow positif sepanjang bulan yang tercatat.`}</div>
+    </div>
+  `;
+}
+
+function renderSaldoDailyTable(filtered) {
+  const totalRows = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / saldoPageSize));
+  if (saldoPage > totalPages) saldoPage = totalPages;
+  const startIdx = (saldoPage-1)*saldoPageSize;
+  const pageRows = filtered.slice(startIdx, startIdx+saldoPageSize);
+
+  document.getElementById('saldoDailyBody').innerHTML = pageRows.map(d => {
+    const isFuture = d.date > SALDO.last_actual_date;
+    return `<tr class="${isFuture?'future':''}">
+      <td>${new Date(d.date).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}</td>
+      <td>${fmtRp(d.saldoAwal)}</td>
+      <td>${d.debit===0?'—':fmtRp(d.debit)}</td>
+      <td>${d.kredit===0?'—':fmtRp(d.kredit)}</td>
+      <td>${fmtRp(d.saldoAkhir)}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" style="text-align:center; color:var(--ink-faint); padding:24px;">Tidak ada data pada rentang tanggal ini</td></tr>`;
+
+  document.getElementById('saldoDailyCount').textContent = `${totalRows.toLocaleString('id-ID')} hari`;
+  document.getElementById('saldoPageInfo').textContent = `Menampilkan ${totalRows===0?0:startIdx+1}–${Math.min(startIdx+saldoPageSize,totalRows)} dari ${totalRows.toLocaleString('id-ID')}`;
+  document.getElementById('saldoPageLabel').textContent = `Hal ${saldoPage} / ${totalPages}`;
+  document.getElementById('saldoPgPrev').disabled = saldoPage <= 1;
+  document.getElementById('saldoPgNext').disabled = saldoPage >= totalPages;
+}
+
+document.getElementById('saldoPgPrev').addEventListener('click', () => {
+  saldoPage--;
+  renderSaldoDailyTable(getSaldoFilteredDaily());
+});
+document.getElementById('saldoPgNext').addEventListener('click', () => {
+  saldoPage++;
+  renderSaldoDailyTable(getSaldoFilteredDaily());
+});
+
+dateFromInput.addEventListener('change', () => {
+  saldoFilterFrom = dateFromInput.value;
+  saldoPage = 1;
+  renderSaldoView();
+});
+dateToInput.addEventListener('change', () => {
+  saldoFilterTo = dateToInput.value;
+  saldoPage = 1;
+  renderSaldoView();
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const preset = btn.dataset.preset;
+    const lastDate = new Date(SALDO.last_actual_date);
+    const firstDate = new Date(SALDO.daily[0].date);
+    if (preset === 'all') {
+      saldoFilterFrom = SALDO.daily[0].date;
+      saldoFilterTo = SALDO.last_actual_date;
+    } else if (preset === '30') {
+      const from = new Date(lastDate); from.setDate(from.getDate()-29);
+      saldoFilterFrom = (from < firstDate ? firstDate : from).toISOString().slice(0,10);
+      saldoFilterTo = SALDO.last_actual_date;
+    } else if (preset === '90') {
+      const from = new Date(lastDate); from.setDate(from.getDate()-89);
+      saldoFilterFrom = (from < firstDate ? firstDate : from).toISOString().slice(0,10);
+      saldoFilterTo = SALDO.last_actual_date;
+    } else if (preset === 'ytd') {
+      saldoFilterFrom = '2026-01-01';
+      saldoFilterTo = SALDO.last_actual_date;
+    }
+    dateFromInput.value = saldoFilterFrom;
+    dateToInput.value = saldoFilterTo;
+    saldoPage = 1;
+    renderSaldoView();
+  });
+});
+
+renderSaldoView();
+
+// ======================= VIEW: DATA CASH FLOW =======================
+const CF = DATA.cashflow;
+let cashflowActivityChart = null;
+
+function fmtRpSigned(n, opts={}) {
+  const s = fmtRp(Math.abs(n), opts);
+  return n < 0 ? '-' + s : (n > 0 ? '+' + s : s);
+}
+
+function renderCashflowView() {
+  const lastIdx = CF.last_actual_month_idx; // 0-based, e.g. 5 = June
+  const monthsActual = CF.months.slice(0, lastIdx+1);
+
+  // KPI: sum across actual months only
+  const sumActual = (arr) => arr.slice(0, lastIdx+1).reduce((s,v)=>s+v, 0);
+  const totalOp = sumActual(CF.operasional.monthly);
+  const totalInv = sumActual(CF.investasi.monthly);
+  const totalFin = sumActual(CF.pendanaan.monthly);
+  const totalNet = sumActual(CF.net_change_monthly);
+  const endingCashLast = CF.ending_cash[lastIdx];
+
+  document.getElementById('kpiRowCashflow').innerHTML = `
+    <div class="kpi">
+      <div class="label">Arus Kas Operasional (YTD)</div>
+      <div class="value">${fmtRpSigned(totalOp, {compact:true})}</div>
+      <div class="delta ${totalOp>=0?'up':'down'}">${totalOp>=0?'Surplus':'Defisit'} dari operasional</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Arus Kas Investasi (YTD)</div>
+      <div class="value">${fmtRpSigned(totalInv, {compact:true})}</div>
+      <div class="delta flat">${totalInv===0?'Tidak ada aktivitas investasi':((totalInv>=0?'Surplus':'Defisit')+' dari investasi')}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Arus Kas Pendanaan (YTD)</div>
+      <div class="value">${fmtRpSigned(totalFin, {compact:true})}</div>
+      <div class="delta ${totalFin>=0?'up':'down'}">${totalFin>=0?'Surplus':'Defisit'} dari pendanaan</div>
+    </div>
+    <div class="kpi accent">
+      <div class="label">Net Change in Cash (YTD)</div>
+      <div class="value">${fmtRpSigned(totalNet, {compact:true})}</div>
+      <div class="delta flat">Saldo akhir per ${monthsActual[monthsActual.length-1]}: ${fmtRp(endingCashLast,{compact:true})}</div>
+    </div>
+  `;
+
+  // Chart: grouped bar per activity per month (actual months only) + net change line
+  const ctx = document.getElementById('cashflowActivityChart').getContext('2d');
+  if (cashflowActivityChart) cashflowActivityChart.destroy();
+  cashflowActivityChart = new Chart(ctx, {
+    data: {
+      labels: monthsActual,
+      datasets: [
+        { type:'bar', label:'Operasional', data: CF.operasional.monthly.slice(0,lastIdx+1), backgroundColor:'rgba(123,150,168,0.75)', borderRadius:3 },
+        { type:'bar', label:'Investasi', data: CF.investasi.monthly.slice(0,lastIdx+1), backgroundColor:'rgba(201,154,91,0.75)', borderRadius:3 },
+        { type:'bar', label:'Pendanaan', data: CF.pendanaan.monthly.slice(0,lastIdx+1), backgroundColor:'rgba(201,122,107,0.75)', borderRadius:3 },
+        { type:'line', label:'Net Change', data: CF.net_change_monthly.slice(0,lastIdx+1), borderColor:'#3A3530', backgroundColor:'#3A3530', borderWidth:2, pointRadius:4, pointBackgroundColor:'#3A3530', tension:0.2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+          titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+          titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+          bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 }, padding: 10,
+          callbacks: { label: (item) => ' ' + item.dataset.label + ': ' + fmtRpSigned(item.raw) }
+        }
+      },
+      scales: {
+        x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:10.5} } },
+        y: { grid: { color:'rgba(58,53,48,0.06)' }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) } }
+      }
+    }
+  });
+
+  // Build detail tables per activity
+  function buildActivityTable(activityKey, headId, bodyId, footId) {
+    const activity = CF[activityKey];
+    const headEl = document.getElementById(headId);
+    const bodyEl = document.getElementById(bodyId);
+    const footEl = document.getElementById(footId);
+
+    headEl.innerHTML = `<th>Item</th>` + monthsActual.map(m=>`<th>${m}</th>`).join('') + `<th>Total</th>`;
+
+    if (activity.items.length === 0) {
+      bodyEl.innerHTML = `<tr><td colspan="${monthsActual.length+2}" style="text-align:center; color:var(--ink-faint); padding:20px;">Tidak ada aktivitas pada kategori ini</td></tr>`;
+      footEl.innerHTML = '';
+      return;
+    }
+
+    bodyEl.innerHTML = activity.items.map(it => {
+      const monthCells = it.monthly.slice(0,lastIdx+1).map(v => `<td>${v===0?'—':fmtRpSigned(v)}</td>`).join('');
+      return `<tr><td>${it.desc}</td>${monthCells}<td class="variance-cell ${it.total>=0?'pos':'neg'}">${fmtRpSigned(it.total)}</td></tr>`;
+    }).join('');
+
+    const totalsByMonth = monthsActual.map((_, i) => activity.monthly[i]);
+    const grandTotal = totalsByMonth.reduce((s,v)=>s+v,0);
+    footEl.innerHTML = `<td>Total</td>` + totalsByMonth.map(v=>`<td class="variance-cell ${v>=0?'pos':'neg'}">${fmtRpSigned(v)}</td>`).join('') + `<td class="variance-cell ${grandTotal>=0?'pos':'neg'}">${fmtRpSigned(grandTotal)}</td>`;
+  }
+
+  buildActivityTable('operasional', 'cfOperasionalHead', 'cfOperasionalBody', 'cfOperasionalFoot');
+  buildActivityTable('investasi', 'cfInvestasiHead', 'cfInvestasiBody', 'cfInvestasiFoot');
+  buildActivityTable('pendanaan', 'cfPendanaanHead', 'cfPendanaanBody', 'cfPendanaanFoot');
+
+  // Reconciliation table
+  document.getElementById('cfReconBody').innerHTML = monthsActual.map((m, i) => {
+    const net = CF.net_change_monthly[i];
+    return `<tr>
+      <td>${m} 2026</td>
+      <td>${fmtRp(CF.beginning_cash[i])}</td>
+      <td class="variance-cell ${CF.operasional.monthly[i]>=0?'pos':'neg'}">${fmtRpSigned(CF.operasional.monthly[i])}</td>
+      <td class="variance-cell ${CF.investasi.monthly[i]>=0?'pos':'neg'}">${fmtRpSigned(CF.investasi.monthly[i])}</td>
+      <td class="variance-cell ${CF.pendanaan.monthly[i]>=0?'pos':'neg'}">${fmtRpSigned(CF.pendanaan.monthly[i])}</td>
+      <td class="variance-cell ${net>=0?'pos':'neg'}">${fmtRpSigned(net)}</td>
+      <td>${fmtRp(CF.ending_cash[i])}</td>
+    </tr>`;
+  }).join('');
+
+  // Insights
+  const opMonthly = CF.operasional.monthly.slice(0,lastIdx+1);
+  const finMonthly = CF.pendanaan.monthly.slice(0,lastIdx+1);
+  const bestOpIdx = opMonthly.indexOf(Math.max(...opMonthly));
+  const worstOpIdx = opMonthly.indexOf(Math.min(...opMonthly));
+  const topFinSource = [...CF.pendanaan.items].sort((a,b)=>b.total-a.total)[0];
+  const opNegativeMonths = opMonthly.filter(v=>v<0).length;
+
+  document.getElementById('insightStripCashflow').innerHTML = `
+    <div class="insight">
+      <div class="tag">Operasional Terbaik</div>
+      <div class="txt"><b>${monthsActual[bestOpIdx]}</b> mencatat arus kas operasional tertinggi: <b>${fmtRpSigned(opMonthly[bestOpIdx],{compact:true})}</b>.</div>
+    </div>
+    <div class="insight">
+      <div class="tag">Sumber Pendanaan Utama</div>
+      <div class="txt">${topFinSource ? `<b>${topFinSource.desc}</b> jadi kontributor terbesar arus kas pendanaan: <b>${fmtRpSigned(topFinSource.total,{compact:true})}</b>.` : 'Tidak ada aktivitas pendanaan signifikan.'}</div>
+    </div>
+    <div class="insight">
+      <div class="tag">Perhatian</div>
+      <div class="txt">${opNegativeMonths > 0 ? `Arus kas operasional <b>negatif di ${opNegativeMonths} bulan</b> — perusahaan bergantung pada aktivitas pendanaan untuk menutup defisit kas operasional.` : 'Arus kas operasional positif di seluruh bulan yang tercatat.'}</div>
+    </div>
+  `;
+}
+
+renderCashflowView();
+</script>
+</body>
+</html>
