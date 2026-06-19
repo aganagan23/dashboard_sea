@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Omzet — SEA</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #FBF8F2;
+    --panel: #FFFFFF;
+    --panel-2: #F3EEE3;
+    --line: #E6DFD0;
+    --ink: #3A3530;
+    --ink-dim: #837A6D;
+    --ink-faint: #B3A993;
+    --gold: #C99A5B;
+    --gold-dim: #DDBE8C;
+    --green: #7CA582;
+    --green-bg: #E7EFE6;
+    --red: #C97A6B;
+    --red-bg: #F6E8E4;
+    --blue: #7B96A8;
+    --mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans); }
+
+  body{
+    background-image:
+      radial-gradient(ellipse at top right, rgba(143,174,146,0.10), transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(208,139,125,0.06), transparent 55%);
+  }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:36px 28px 80px; }
+
+  /* ---------- HEADER ---------- */
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:28px;
+    gap:20px; flex-wrap:wrap;
+  }
+  .masthead-left .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 8px;
+  }
+  .masthead-left h1{
+    font-family:var(--serif); font-weight:600; font-size:34px; margin:0; letter-spacing:-0.01em;
+  }
+  .masthead-left .sub{ color:var(--ink-dim); font-size:13.5px; margin-top:6px; }
+  .masthead-right{ text-align:right; font-family:var(--mono); font-size:12px; color:var(--ink-faint); }
+  .masthead-right .asof{ color:var(--ink-dim); font-size:13px; margin-bottom:4px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    border:1px solid var(--line); border-radius:100px; padding:4px 12px;
+    font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin-top:8px;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; background:var(--green); }
+
+  /* ---------- NAV TABS ---------- */
+  .nav-tabs{ display:flex; gap:4px; margin-bottom:32px; border-bottom:1px solid var(--line); }
+  .nav-tab{
+    font-family:var(--mono); font-size:12px; padding:10px 18px; border:none; background:transparent;
+    color:var(--ink-faint); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+    transition:all .15s;
+  }
+  .nav-tab.active{ color:var(--ink); border-bottom-color:var(--gold); font-weight:600; }
+  .nav-tab:hover{ color:var(--ink); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* ---------- KPI ROW ---------- */
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:28px; }
+  .kpi{ background:var(--panel); padding:22px 22px; position:relative; }
+  .kpi .label{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:10px; }
+  .kpi .value{ font-family:var(--serif); font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.1; }
+  .kpi .delta{ font-family:var(--mono); font-size:11.5px; margin-top:8px; }
+  .delta.up{ color:var(--green); } .delta.down{ color:var(--red); } .delta.flat{ color:var(--ink-faint); }
+  .kpi.accent{ background:linear-gradient(135deg, rgba(201,154,91,0.10), transparent); }
+  .kpi.accent .value{ color:var(--gold); }
+
+  /* ---------- ACHIEVEMENT BADGE ---------- */
+  .achv-badge{
+    display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:100px;
+    font-family:var(--mono); font-size:11px; font-weight:600;
+  }
+  .achv-badge.good{ background:var(--green-bg); color:#4F7A56; }
+  .achv-badge.warn{ background:#FBF1DD; color:#A87A28; }
+  .achv-badge.bad{ background:var(--red-bg); color:#A8493A; }
+
+  /* ---------- SECTION ---------- */
+  .section{ margin-bottom:36px; }
+  .section-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .section-head h2{ font-family:var(--serif); font-size:19px; font-weight:600; margin:0; }
+  .section-head .note{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:24px; box-shadow:0 2px 14px rgba(58,53,48,0.05); }
+
+  /* ---------- CHART ---------- */
+  .chart-tabs{ display:flex; gap:4px; }
+  .chart-tab{
+    font-family:var(--mono); font-size:11px; padding:5px 12px; border-radius:100px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-faint); cursor:pointer;
+    transition:all .15s;
+  }
+  .chart-tab.active{ background:var(--gold); color:#fff; border-color:var(--gold); }
+  .chart-wrap{ height:300px; position:relative; }
+  .chart-wrap.tall{ height:340px; }
+
+  .legend-row{ display:flex; gap:18px; margin-bottom:14px; font-family:var(--mono); font-size:11px; color:var(--ink-dim); }
+  .legend-item{ display:flex; align-items:center; gap:6px; }
+  .legend-swatch{ width:12px; height:12px; border-radius:3px; }
+
+  /* ---------- TABLE ---------- */
+  table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; }
+  thead th{
+    text-align:right; font-size:10px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:500; padding:0 0 10px; border-bottom:1px solid var(--line);
+  }
+  thead th:first-child, tbody td:first-child{ text-align:left; }
+  tbody td{ padding:10px 0; border-bottom:1px solid rgba(58,53,48,0.05); text-align:right; color:var(--ink); }
+  tbody tr:hover td{ background:rgba(201,154,91,0.04); }
+  tbody td:first-child{ font-family:var(--sans); color:var(--ink); font-weight:500; }
+  tbody tr.empty td{ color:var(--ink-faint); }
+  tbody tr.future td{ color:var(--ink-faint); font-style:italic; }
+  .variance-cell{ font-weight:600; }
+  .variance-cell.pos{ color:var(--green); }
+  .variance-cell.neg{ color:var(--red); }
+  tfoot td{ padding-top:14px; border-top:2px solid var(--line); font-weight:700; color:var(--ink); }
+  tfoot .variance-cell.pos{ color:var(--green); } tfoot .variance-cell.neg{ color:var(--red); }
+
+  /* ---------- CALENDAR HEATMAP ---------- */
+  .cal-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; }
+  .cal-month-label{ font-family:var(--mono); font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; margin:18px 0 8px; }
+  .cal-day{
+    aspect-ratio:1; border-radius:3px; background:var(--panel-2); position:relative; cursor:default;
+    border:1px solid rgba(58,53,48,0.03);
+  }
+  .cal-day[data-level="0"]{ background:var(--panel-2); }
+  .cal-day[data-level="1"]{ background:rgba(201,154,91,0.20); }
+  .cal-day[data-level="2"]{ background:rgba(201,154,91,0.42); }
+  .cal-day[data-level="3"]{ background:rgba(201,154,91,0.65); }
+  .cal-day[data-level="4"]{ background:rgba(201,154,91,0.85); }
+  .cal-day[data-future="1"]{ background:transparent; border:1px dashed rgba(58,53,48,0.10); }
+  .cal-day:hover::after{
+    content: attr(data-tip); position:absolute; bottom:120%; left:50%; transform:translateX(-50%);
+    background:#3A3530; color:#FBF8F2; font-family:var(--mono); font-size:10.5px; padding:5px 8px;
+    border-radius:3px; white-space:nowrap; z-index:10; border:1px solid var(--line); pointer-events:none;
+  }
+  .cal-legend{ display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:14px; justify-content:flex-end; }
+  .cal-legend .sq{ width:11px; height:11px; border-radius:2px; }
+
+  /* ---------- INSIGHT STRIP ---------- */
+  .insight-strip{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .insight{ background:var(--panel); padding:18px 20px; }
+  .insight .tag{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--gold); margin-bottom:8px; }
+  .insight .txt{ font-size:13.5px; color:var(--ink-dim); line-height:1.5; }
+  .insight .txt b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- NOTICE ---------- */
+  .notice{
+    border:1px dashed var(--gold-dim); border-radius:4px; padding:16px 20px;
+    font-size:13px; color:var(--ink-dim); background:rgba(201,154,91,0.06);
+    display:flex; gap:12px; align-items:flex-start; margin-bottom:32px;
+  }
+  .notice .ic{ font-family:var(--serif); font-size:18px; color:var(--gold); flex-shrink:0; }
+
+  footer{ text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:40px; padding-top:20px; border-top:1px solid var(--line); }
+
+  @media (max-width:760px){
+    .kpi-row{ grid-template-columns:repeat(2,1fr); }
+    .insight-strip{ grid-template-columns:1fr; }
+    .masthead{ flex-direction:column; align-items:flex-start; }
+    .masthead-right{ text-align:left; }
+    table{ font-size:11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="masthead-left">
+      <p class="eyebrow">Syaamil Group · Financial Planning &amp; Analysis</p>
+      <h1>Omzet — Entitas SEA</h1>
+      <p class="sub">Budget vs Realisasi pendapatan, diskon, dan gross profit tahun anggaran 2026</p>
+    </div>
+    <div class="masthead-right">
+      <div class="asof">Data per <span id="asOfDate" style="color:var(--gold)">12 Jun 2026</span></div>
+      <div>Sumber: SEA Cash Management Report</div>
+      <div class="pill"><span class="dot"></span> 107 hari transaksi tercatat</div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-view="bvr">Budget vs Realisasi</button>
+    <button class="nav-tab" data-view="real">Detail Realisasi</button>
+  </div>
+
+  <!-- ============ VIEW 1: BUDGET VS REALISASI ============ -->
+  <div class="view active" id="view-bvr">
+
+    <div class="kpi-row" id="kpiRowBvr"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Pendapatan Netto — Budget vs Realisasi per Bulan</h2>
+        <span class="note">batang = nilai · garis = % achievement</span>
+      </div>
+      <div class="panel">
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--gold-dim)"></span>Budget</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span>Realisasi</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--red); border-radius:50%; width:8px;height:8px;"></span>% Achievement</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="bvrChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Tabel Variance Bulanan</h2>
+        <span class="note">Realisasi − Budget (prorata hari berjalan)</span>
+      </div>
+      <div class="panel" style="overflow-x:auto;">
+        <table id="varianceTable">
+          <thead>
+            <tr>
+              <th>Bulan</th>
+              <th>Budget Netto</th>
+              <th>Realisasi Netto</th>
+              <th>Variance</th>
+              <th>Achievement</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="varianceBody"></tbody>
+          <tfoot>
+            <tr>
+              <td>Total YTD</td>
+              <td id="ftBudget"></td>
+              <td id="ftReal"></td>
+              <td id="ftVariance"></td>
+              <td id="ftAchv"></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Catatan Analisis</h2></div>
+      <div class="insight-strip" id="insightStripBvr"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW 2: DETAIL REALISASI ============ -->
+  <div class="view" id="view-real">
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Tren Pendapatan Netto Harian</h2>
+        <div class="chart-tabs">
+          <button class="chart-tab active" data-range="all">Full Year</button>
+          <button class="chart-tab" data-range="ytd">YTD (s.d Jun)</button>
+          <button class="chart-tab" data-range="90">90 Hari Terakhir</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Rekap Bulanan</h2>
+        <span class="note">dalam Rupiah</span>
+      </div>
+      <div class="panel" style="overflow-x:auto;">
+        <table id="monthlyTable">
+          <thead>
+            <tr>
+              <th>Bulan</th>
+              <th>Hari Aktif</th>
+              <th>Pendapatan Bruto</th>
+              <th>Diskon</th>
+              <th>Pendapatan Netto</th>
+              <th>Cost</th>
+              <th>Gross Profit</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyBody"></tbody>
+          <tfoot>
+            <tr>
+              <td>Total YTD</td>
+              <td id="ftDays"></td>
+              <td id="ftBruto"></td>
+              <td id="ftDiskon"></td>
+              <td id="ftNetto"></td>
+              <td id="ftCost"></td>
+              <td id="ftGp"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Kalender Aktivitas Penjualan</h2>
+        <span class="note">intensitas = besaran pendapatan netto harian</span>
+      </div>
+      <div class="panel">
+        <div id="calendarContainer"></div>
+        <div class="cal-legend">
+          <span>Sepi</span>
+          <span class="sq" style="background:var(--panel-2)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.20)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.42)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.65)"></span>
+          <span class="sq" style="background:rgba(201,154,91,0.85)"></span>
+          <span>Ramai</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Catatan Analisis</h2></div>
+      <div class="insight-strip" id="insightStrip"></div>
+    </div>
+  </div>
+
+  <footer>Dashboard dibuat otomatis dari data Budget &amp; Realisasi Omzet · Syaamil Group FP&amp;A</footer>
+</div>
+
+<script>
+const DATA = {"omzet": {"daily": [{"date": "2026-01-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-05", "bruto": 42585000.0, "diskon": 15945250.0, "netto": 26639750.0, "cost": 17421635.0, "gp": 9218115.0}, {"date": "2026-01-06", "bruto": 147083500.0, "diskon": 57967899.0, "netto": 89115601.0, "cost": 61358364.0, "gp": 27757237.0}, {"date": "2026-01-07", "bruto": 255018900.0, "diskon": 70686825.0, "netto": 184332075.0, "cost": 123009329.0, "gp": 61322746.0}, {"date": "2026-01-08", "bruto": 81050500.0, "diskon": 30392450.0, "netto": 50658050.0, "cost": 32011384.0, "gp": 18646666.0}, {"date": "2026-01-09", "bruto": 83749300.0, "diskon": 18745703.0, "netto": 65003598.0, "cost": 47088932.0, "gp": 17914665.0}, {"date": "2026-01-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-12", "bruto": 71462500.0, "diskon": 26992900.0, "netto": 44469600.0, "cost": 28370719.0, "gp": 16098881.0}, {"date": "2026-01-13", "bruto": 191574300.0, "diskon": 74498659.0, "netto": 117075641.0, "cost": 77556426.0, "gp": 39519216.0}, {"date": "2026-01-14", "bruto": 80285800.0, "diskon": 30968705.0, "netto": 49317095.0, "cost": 31952808.0, "gp": 17364287.0}, {"date": "2026-01-15", "bruto": 102526000.0, "diskon": 30818475.0, "netto": 71707525.0, "cost": 47125477.0, "gp": 24582048.0}, {"date": "2026-01-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-19", "bruto": 33665500.0, "diskon": 7945640.0, "netto": 25719860.0, "cost": 17089343.0, "gp": 8630517.0}, {"date": "2026-01-20", "bruto": 102370400.0, "diskon": 36165447.0, "netto": 66204953.0, "cost": 43260412.0, "gp": 22944541.0}, {"date": "2026-01-21", "bruto": 431276000.0, "diskon": 21461300.0, "netto": 409814700.0, "cost": 313479312.0, "gp": 96335388.0}, {"date": "2026-01-22", "bruto": 260379500.0, "diskon": 63044555.0, "netto": 197334945.0, "cost": 131603307.0, "gp": 65731638.0}, {"date": "2026-01-23", "bruto": 59446000.0, "diskon": 22676330.0, "netto": 36769670.0, "cost": 25340963.0, "gp": 11428707.0}, {"date": "2026-01-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-01-26", "bruto": 443218000.0, "diskon": 91653263.0, "netto": 351564738.0, "cost": 263849132.0, "gp": 87715605.0}, {"date": "2026-01-27", "bruto": 136035500.0, "diskon": 54038450.0, "netto": 81997050.0, "cost": 52711930.0, "gp": 29285120.0}, {"date": "2026-01-28", "bruto": 317536400.0, "diskon": 123392180.0, "netto": 194144220.0, "cost": 118486044.0, "gp": 75658177.0}, {"date": "2026-01-29", "bruto": 305433600.0, "diskon": 67188382.0, "netto": 238245218.0, "cost": 157129019.0, "gp": 81116199.0}, {"date": "2026-01-30", "bruto": 505510600.0, "diskon": 104844255.0, "netto": 400666345.0, "cost": 279340223.0, "gp": 121326122.0}, {"date": "2026-01-31", "bruto": 28374000.0, "diskon": 6513000.0, "netto": 21861000.0, "cost": 16420589.0, "gp": 5440411.0}, {"date": "2026-02-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-02", "bruto": 72135000.0, "diskon": 28002750.0, "netto": 44132250.0, "cost": 30585921.0, "gp": 13546329.0}, {"date": "2026-02-03", "bruto": 167922000.0, "diskon": 55418070.0, "netto": 112503930.0, "cost": 71075221.0, "gp": 41428709.0}, {"date": "2026-02-04", "bruto": 312303000.0, "diskon": 58615350.0, "netto": 253687650.0, "cost": 171746027.0, "gp": 81941623.0}, {"date": "2026-02-05", "bruto": 67799900.0, "diskon": 20610520.0, "netto": 47189380.0, "cost": 35201897.0, "gp": 11987483.0}, {"date": "2026-02-06", "bruto": 71411000.0, "diskon": 28047400.0, "netto": 43363600.0, "cost": 29393374.0, "gp": 13970226.0}, {"date": "2026-02-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-09", "bruto": 128115500.0, "diskon": 56000141.0, "netto": 72115359.0, "cost": 54718186.0, "gp": 17397173.0}, {"date": "2026-02-10", "bruto": 313991600.0, "diskon": 37033466.0, "netto": 276958134.0, "cost": 187679232.0, "gp": 89278902.0}, {"date": "2026-02-11", "bruto": 80045500.0, "diskon": 10340800.0, "netto": 69704700.0, "cost": 43554524.0, "gp": 26150176.0}, {"date": "2026-02-12", "bruto": 142947500.0, "diskon": 34735450.0, "netto": 108212050.0, "cost": 77255720.0, "gp": 30956330.0}, {"date": "2026-02-13", "bruto": 229597700.0, "diskon": 41814730.0, "netto": 187782970.0, "cost": 128833800.0, "gp": 58949170.0}, {"date": "2026-02-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-17", "bruto": 15015000.0, "diskon": 7479690.0, "netto": 7535310.0, "cost": 6436306.0, "gp": 1099004.0}, {"date": "2026-02-18", "bruto": 263810700.0, "diskon": 39420423.0, "netto": 224390277.0, "cost": 157180918.0, "gp": 67209359.0}, {"date": "2026-02-19", "bruto": 140038500.0, "diskon": 30778175.0, "netto": 109260325.0, "cost": 74917719.0, "gp": 34342606.0}, {"date": "2026-02-20", "bruto": 139803000.0, "diskon": 46445770.0, "netto": 93357230.0, "cost": 63826851.0, "gp": 29530379.0}, {"date": "2026-02-21", "bruto": 142398000.0, "diskon": 0.0, "netto": 142398000.0, "cost": 95406660.0, "gp": 46991340.0}, {"date": "2026-02-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-02-23", "bruto": 186498800.0, "diskon": 66490195.0, "netto": 120008605.0, "cost": 68810060.0, "gp": 51198545.0}, {"date": "2026-02-24", "bruto": 364884800.0, "diskon": 79933847.0, "netto": 284950953.0, "cost": 202201724.0, "gp": 82749229.0}, {"date": "2026-02-25", "bruto": 64918500.0, "diskon": 24356750.0, "netto": 40561750.0, "cost": 25761318.0, "gp": 14800432.0}, {"date": "2026-02-26", "bruto": 50245500.0, "diskon": 9858600.0, "netto": 40386900.0, "cost": 29683101.0, "gp": 10703799.0}, {"date": "2026-02-27", "bruto": 364192300.0, "diskon": 68691110.0, "netto": 295501191.0, "cost": 189530268.0, "gp": 105970923.0}, {"date": "2026-02-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-02", "bruto": -2987846.0, "diskon": 478730.0, "netto": -3466576.0, "cost": 1159655.0, "gp": -4626231.0}, {"date": "2026-03-03", "bruto": 30648000.0, "diskon": 11601025.0, "netto": 19046975.0, "cost": 11302821.0, "gp": 7744154.0}, {"date": "2026-03-04", "bruto": 30935500.0, "diskon": 7000938.0, "netto": 23934563.0, "cost": 15922117.0, "gp": 8012445.0}, {"date": "2026-03-05", "bruto": 308142200.0, "diskon": 71079717.0, "netto": 237062483.0, "cost": 179639425.0, "gp": 57423057.0}, {"date": "2026-03-06", "bruto": 68773707.0, "diskon": 32524100.0, "netto": 36249607.0, "cost": 24007577.0, "gp": 12242030.0}, {"date": "2026-03-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-09", "bruto": 75166400.0, "diskon": 32362084.0, "netto": 42804316.0, "cost": 28581910.0, "gp": 14222406.0}, {"date": "2026-03-10", "bruto": 167119800.0, "diskon": 78681652.0, "netto": 88438148.0, "cost": 63369303.0, "gp": 25068845.0}, {"date": "2026-03-11", "bruto": 50737500.0, "diskon": 19173438.0, "netto": 31564062.0, "cost": 19931670.0, "gp": 11632392.0}, {"date": "2026-03-12", "bruto": 205561800.0, "diskon": 32755955.0, "netto": 172805845.0, "cost": 102099125.0, "gp": 70706720.0}, {"date": "2026-03-13", "bruto": 35703000.0, "diskon": 19641609.0, "netto": 16061391.0, "cost": 11378918.0, "gp": 4682473.0}, {"date": "2026-03-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-15", "bruto": 270000000.0, "diskon": 0.0, "netto": 270000000.0, "cost": 180900000.0, "gp": 89100000.0}, {"date": "2026-03-16", "bruto": 194114480.0, "diskon": 33924691.0, "netto": 160189789.0, "cost": 118546660.0, "gp": 41643129.0}, {"date": "2026-03-17", "bruto": 78658800.0, "diskon": 22970350.0, "netto": 55688450.0, "cost": 40726623.0, "gp": 14961826.0}, {"date": "2026-03-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-25", "bruto": 7009000.0, "diskon": 3013400.0, "netto": 3995600.0, "cost": 2565085.0, "gp": 1430515.0}, {"date": "2026-03-26", "bruto": 225927500.0, "diskon": 16617400.0, "netto": 209310100.0, "cost": 157353751.0, "gp": 51956349.0}, {"date": "2026-03-27", "bruto": 45998500.0, "diskon": 18031500.0, "netto": 27967000.0, "cost": 17871166.0, "gp": 10095834.0}, {"date": "2026-03-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-03-30", "bruto": 71727900.0, "diskon": 29025544.0, "netto": 42702356.0, "cost": 26738399.0, "gp": 15963957.0}, {"date": "2026-03-31", "bruto": 313012600.0, "diskon": 62002080.0, "netto": 251010520.0, "cost": 163606591.0, "gp": 87403929.0}, {"date": "2026-04-01", "bruto": 30481000.0, "diskon": 10787052.0, "netto": 19693948.0, "cost": 10530706.0, "gp": 9163242.0}, {"date": "2026-04-02", "bruto": 73338000.0, "diskon": 27399200.0, "netto": 45938800.0, "cost": 27987052.0, "gp": 17951748.0}, {"date": "2026-04-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-06", "bruto": 72937700.0, "diskon": 26524436.0, "netto": 46413264.0, "cost": 29811957.0, "gp": 16601307.0}, {"date": "2026-04-07", "bruto": 49052500.0, "diskon": 19617075.0, "netto": 29435425.0, "cost": 19293282.0, "gp": 10142143.0}, {"date": "2026-04-08", "bruto": 26845000.0, "diskon": 10276750.0, "netto": 16568250.0, "cost": 10937851.0, "gp": 5630400.0}, {"date": "2026-04-09", "bruto": 19410000.0, "diskon": 5699750.0, "netto": 13710250.0, "cost": 9136613.0, "gp": 4573637.0}, {"date": "2026-04-10", "bruto": 107347384.0, "diskon": 34170129.0, "netto": 73177255.0, "cost": 60036281.0, "gp": 13140974.0}, {"date": "2026-04-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-13", "bruto": 172552300.0, "diskon": 52960395.0, "netto": 119591905.0, "cost": 80269844.0, "gp": 39322061.0}, {"date": "2026-04-14", "bruto": 45213500.0, "diskon": 18297076.0, "netto": 26916424.0, "cost": 18824349.0, "gp": 8092074.0}, {"date": "2026-04-15", "bruto": 30383500.0, "diskon": 9947825.0, "netto": 20435675.0, "cost": 11922862.0, "gp": 8512813.0}, {"date": "2026-04-16", "bruto": 144274700.0, "diskon": 38248331.0, "netto": 106026369.0, "cost": 77848243.0, "gp": 28178126.0}, {"date": "2026-04-17", "bruto": 171148660.0, "diskon": 34976103.0, "netto": 136172557.0, "cost": 103123224.0, "gp": 33049333.0}, {"date": "2026-04-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-20", "bruto": 89059700.0, "diskon": 42785353.0, "netto": 46274348.0, "cost": 33273458.0, "gp": 13000889.0}, {"date": "2026-04-21", "bruto": 96447800.0, "diskon": 37658442.0, "netto": 58789358.0, "cost": 42303032.0, "gp": 16486326.0}, {"date": "2026-04-22", "bruto": 92156300.0, "diskon": 24025488.0, "netto": 68130813.0, "cost": 52360724.0, "gp": 15770089.0}, {"date": "2026-04-23", "bruto": 78998600.0, "diskon": 20906839.0, "netto": 58091761.0, "cost": 36598564.0, "gp": 21493197.0}, {"date": "2026-04-24", "bruto": 90356740.0, "diskon": 34072729.0, "netto": 56284011.0, "cost": 40057398.0, "gp": 16226613.0}, {"date": "2026-04-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-04-27", "bruto": 115951400.0, "diskon": 40255760.0, "netto": 75695640.0, "cost": 48100219.0, "gp": 27595421.0}, {"date": "2026-04-28", "bruto": 84177800.0, "diskon": 33147755.0, "netto": 51030045.0, "cost": 35033103.0, "gp": 15996942.0}, {"date": "2026-04-29", "bruto": 409623198.0, "diskon": 59984118.0, "netto": 349639081.0, "cost": 256320143.0, "gp": 93318938.0}, {"date": "2026-04-30", "bruto": 711096100.0, "diskon": 154668755.0, "netto": 556427345.0, "cost": 323347983.0, "gp": 233079362.0}, {"date": "2026-05-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-04", "bruto": 60044000.0, "diskon": 24117808.0, "netto": 35926193.0, "cost": 23340513.0, "gp": 12585680.0}, {"date": "2026-05-05", "bruto": 90656900.0, "diskon": 34846530.0, "netto": 55810370.0, "cost": 33647307.0, "gp": 22163063.0}, {"date": "2026-05-06", "bruto": 407339900.0, "diskon": 158089428.0, "netto": 249250473.0, "cost": 159620353.0, "gp": 89630119.0}, {"date": "2026-05-07", "bruto": 16145500.0, "diskon": 6428500.0, "netto": 9717000.0, "cost": 5851411.0, "gp": 3865589.0}, {"date": "2026-05-08", "bruto": 13113100.0, "diskon": 2296050.0, "netto": 10817050.0, "cost": 7932173.0, "gp": 2884877.0}, {"date": "2026-05-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-11", "bruto": 28518902.0, "diskon": 10593371.0, "netto": 17925531.0, "cost": 12192079.0, "gp": 5733453.0}, {"date": "2026-05-12", "bruto": 24892740.0, "diskon": 8890535.0, "netto": 16002205.0, "cost": 10307625.0, "gp": 5694580.0}, {"date": "2026-05-13", "bruto": 108301000.0, "diskon": 34395766.0, "netto": 73905234.0, "cost": 44717446.0, "gp": 29187788.0}, {"date": "2026-05-14", "bruto": 105664300.0, "diskon": 39860441.0, "netto": 65803859.0, "cost": 40877810.0, "gp": 24926049.0}, {"date": "2026-05-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-18", "bruto": 165941200.0, "diskon": 75295044.0, "netto": 90646156.0, "cost": 58191333.0, "gp": 32454824.0}, {"date": "2026-05-19", "bruto": 84382500.0, "diskon": 34676650.0, "netto": 49705850.0, "cost": 27747059.0, "gp": 21958791.0}, {"date": "2026-05-20", "bruto": 15515100.0, "diskon": 5044220.0, "netto": 10470880.0, "cost": 8771614.0, "gp": 1699266.0}, {"date": "2026-05-21", "bruto": 70847200.0, "diskon": 20722910.0, "netto": 50124290.0, "cost": 36151075.0, "gp": 13973215.0}, {"date": "2026-05-22", "bruto": 23306000.0, "diskon": 6867200.0, "netto": 16438800.0, "cost": 10252106.0, "gp": 6186694.0}, {"date": "2026-05-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-25", "bruto": 263903400.0, "diskon": 63722413.0, "netto": 200180987.0, "cost": 139103821.0, "gp": 61077167.0}, {"date": "2026-05-26", "bruto": 109955390.0, "diskon": 42688946.0, "netto": 67266444.0, "cost": 34737961.0, "gp": 32528483.0}, {"date": "2026-05-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-05-29", "bruto": 271080430.0, "diskon": 60774193.0, "netto": 210306237.0, "cost": 125858209.0, "gp": 84448028.0}, {"date": "2026-05-30", "bruto": 26730000.0, "diskon": 16956337.0, "netto": 9773663.0, "cost": 9308250.0, "gp": 465413.0}, {"date": "2026-05-31", "bruto": 72090000.0, "diskon": 28836000.0, "netto": 43254000.0, "cost": 32481903.0, "gp": 10772097.0}, {"date": "2026-06-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-02", "bruto": 28549900.0, "diskon": 15916836.0, "netto": 12633064.0, "cost": 11824453.0, "gp": 808610.0}, {"date": "2026-06-03", "bruto": 13297000.0, "diskon": 5256300.0, "netto": 8040700.0, "cost": 4697641.0, "gp": 3343059.0}, {"date": "2026-06-04", "bruto": 99773000.0, "diskon": 33229200.0, "netto": 66543800.0, "cost": 39688655.0, "gp": 26855145.0}, {"date": "2026-06-05", "bruto": 56564300.0, "diskon": 21902370.0, "netto": 34661930.0, "cost": 23782573.0, "gp": 10879357.0}, {"date": "2026-06-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-08", "bruto": 77004500.0, "diskon": 24071440.0, "netto": 52933060.0, "cost": 31750116.0, "gp": 21182944.0}, {"date": "2026-06-09", "bruto": 66578800.0, "diskon": 21948830.0, "netto": 44629970.0, "cost": 27762590.0, "gp": 16867380.0}, {"date": "2026-06-10", "bruto": 31125700.0, "diskon": 8522065.0, "netto": 22603635.0, "cost": 15691489.0, "gp": 6912146.0}, {"date": "2026-06-11", "bruto": 56163900.0, "diskon": 18343773.0, "netto": 37820128.0, "cost": 23010236.0, "gp": 14809892.0}, {"date": "2026-06-12", "bruto": 37734565.0, "diskon": 15149730.0, "netto": 22584835.0, "cost": 12970545.0, "gp": 9614290.0}, {"date": "2026-06-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-06-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-07-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-08-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-09-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-10-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-11-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-01", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-02", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-03", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-04", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-05", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-06", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-07", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-08", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-09", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-10", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-11", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-12", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-13", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-14", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-15", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-16", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-17", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-18", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-19", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-20", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-21", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-22", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-23", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-24", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-25", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-26", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-27", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-28", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-29", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-30", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, {"date": "2026-12-31", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}], "monthly": [{"month": "Jan", "bruto": 3678581300.0, "diskon": 955939668.0, "netto": 2722641634.0, "cost": 1884605348.0, "gp": 838036286.0, "active_days": 20}, {"month": "Feb", "bruto": 3318073800.0, "diskon": 744073237.0, "netto": 2574000564.0, "cost": 1743798827.0, "gp": 830201737.0, "active_days": 20}, {"month": "Mar", "bruto": 2176248841.0, "diskon": 490884213.0, "netto": 1685364629.0, "cost": 1165700796.0, "gp": 519663830.0, "active_days": 18}, {"month": "Apr", "bruto": 2710851882.0, "diskon": 736409361.0, "netto": 1974442524.0, "cost": 1327116888.0, "gp": 647325635.0, "active_days": 21}, {"month": "Mei", "bruto": 1958427562.0, "diskon": 675102342.0, "netto": 1283325222.0, "cost": 821090048.0, "gp": 462235176.0, "active_days": 19}, {"month": "Jun", "bruto": 466791665.0, "diskon": 164340544.0, "netto": 302451122.0, "cost": 191178298.0, "gp": 111272823.0, "active_days": 9}, {"month": "Jul", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Agu", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Sep", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Okt", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Nov", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}, {"month": "Des", "bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0, "active_days": 0}], "last_actual_date": "2026-06-12", "ytd": {"bruto": 14308975050.0, "diskon": 3766749365.0, "netto": 10542225695.0, "cost": 7133490205.0, "gp": 3408735487.0}, "avg_daily_netto": 98525473.78504673, "best_day": {"date": "2026-04-30", "bruto": 711096100.0, "diskon": 154668755.0, "netto": 556427345.0, "cost": 323347983.0, "gp": 233079362.0}, "worst_active_day": {"date": "2026-03-02", "bruto": -2987846.0, "diskon": 478730.0, "netto": -3466576.0, "cost": 1159655.0, "gp": -4626231.0}, "active_days_count": 107}, "variance": {"last_actual_date": "2026-06-12", "monthly": [{"month": "Jan", "is_elapsed": true, "is_partial": false, "days_elapsed": 31, "days_total": 31, "active_days": 20, "budget_full": {"bruto": 3680214414.0, "diskon": 967298208.0, "netto": 2712916206.0, "cost": 1903686812.0, "gp": 809229394.0}, "budget_prorated": {"bruto": 3680214414.0, "diskon": 967298208.0, "netto": 2712916206.0, "cost": 1903686812.0, "gp": 809229394.0}, "real": {"bruto": 3678581300.0, "diskon": 955939668.0, "netto": 2722641634.0, "cost": 1884605348.0, "gp": 838036286.0}, "variance": {"bruto": -1633114.0, "diskon": -11358540.0, "netto": 9725428.0, "cost": -19081464.0, "gp": 28806892.0}, "achievement_pct": {"bruto": 99.95562448769867, "diskon": 98.82574578283516, "netto": 100.35848611831398, "cost": 98.99765739407769, "gp": 103.55979308383847}}, {"month": "Feb", "is_elapsed": true, "is_partial": false, "days_elapsed": 28, "days_total": 28, "active_days": 20, "budget_full": {"bruto": 3302721352.0, "diskon": 746362484.0, "netto": 2556358868.0, "cost": 1782094440.0, "gp": 774264428.0}, "budget_prorated": {"bruto": 3302721352.0, "diskon": 746362484.0, "netto": 2556358868.0, "cost": 1782094440.0, "gp": 774264428.0}, "real": {"bruto": 3318073800.0, "diskon": 744073237.0, "netto": 2574000564.0, "cost": 1743798827.0, "gp": 830201737.0}, "variance": {"bruto": 15352448.0, "diskon": -2289247.0, "netto": 17641696.0, "cost": -38295613.0, "gp": 55937309.0}, "achievement_pct": {"bruto": 100.46484236372841, "diskon": 99.69327946553112, "netto": 100.69011030574914, "cost": 97.85108958647555, "gp": 107.22457431558512}}, {"month": "Mar", "is_elapsed": true, "is_partial": false, "days_elapsed": 31, "days_total": 31, "active_days": 18, "budget_full": {"bruto": 2191552843.0, "diskon": 503713668.0, "netto": 1687839144.0, "cost": 1191463300.0, "gp": 496375844.0}, "budget_prorated": {"bruto": 2191552843.0, "diskon": 503713668.0, "netto": 1687839144.0, "cost": 1191463300.0, "gp": 496375844.0}, "real": {"bruto": 2176248841.0, "diskon": 490884213.0, "netto": 1685364629.0, "cost": 1165700796.0, "gp": 519663830.0}, "variance": {"bruto": -15304002.0, "diskon": -12829455.0, "netto": -2474515.0, "cost": -25762504.0, "gp": 23287986.0}, "achievement_pct": {"bruto": 99.30168227296538, "diskon": 97.45302622997318, "netto": 99.85339153859557, "cost": 97.83774254733653, "gp": 104.6916034052616}}, {"month": "Apr", "is_elapsed": true, "is_partial": false, "days_elapsed": 30, "days_total": 30, "active_days": 21, "budget_full": {"bruto": 4057620660.0, "diskon": 1384666680.0, "netto": 2672954010.0, "cost": 1710469020.0, "gp": 962484960.0}, "budget_prorated": {"bruto": 4057620660.0, "diskon": 1384666680.0, "netto": 2672954010.0, "cost": 1710469020.0, "gp": 962484960.0}, "real": {"bruto": 2710851882.0, "diskon": 736409361.0, "netto": 1974442524.0, "cost": 1327116888.0, "gp": 647325635.0}, "variance": {"bruto": -1346768778.0, "diskon": -648257319.0, "netto": -698511486.0, "cost": -383352132.0, "gp": -315159325.0}, "achievement_pct": {"bruto": 66.80890376775635, "diskon": 53.18315025822676, "netto": 73.86743343182324, "cost": 77.58789387486247, "gp": 67.25566236380462}}, {"month": "Mei", "is_elapsed": true, "is_partial": false, "days_elapsed": 31, "days_total": 31, "active_days": 19, "budget_full": {"bruto": 5331604006.0, "diskon": 1620800001.0, "netto": 3710804005.0, "cost": 2190206017.0, "gp": 1520597988.0}, "budget_prorated": {"bruto": 5331604006.0, "diskon": 1620800001.0, "netto": 3710804005.0, "cost": 2190206017.0, "gp": 1520597988.0}, "real": {"bruto": 1958427562.0, "diskon": 675102342.0, "netto": 1283325222.0, "cost": 821090048.0, "gp": 462235176.0}, "variance": {"bruto": -3373176444.0, "diskon": -945697659.0, "netto": -2427478783.0, "cost": -1369115969.0, "gp": -1058362812.0}, "achievement_pct": {"bruto": 36.7324272357072, "diskon": 41.65241495455799, "netto": 34.58348164631778, "cost": 37.48916958618692, "gp": 30.398249875890276}}, {"month": "Jun", "is_elapsed": true, "is_partial": true, "days_elapsed": 12, "days_total": 30, "active_days": 9, "budget_full": {"bruto": 6562953990.0, "diskon": 1706994990.0, "netto": 4855959000.0, "cost": 2864008710.0, "gp": 1991950290.0}, "budget_prorated": {"bruto": 2625181596.0, "diskon": 682797996.0, "netto": 1942383600.0, "cost": 1145603484.0, "gp": 796780116.0}, "real": {"bruto": 466791665.0, "diskon": 164340544.0, "netto": 302451122.0, "cost": 191178298.0, "gp": 111272823.0}, "variance": {"bruto": -2158389931.0, "diskon": -518457452.0, "netto": -1639932478.0, "cost": -954425186.0, "gp": -685507293.0}, "achievement_pct": {"bruto": 17.781309518215895, "diskon": 24.0686916134417, "netto": 15.571132396299062, "cost": 16.687999004025375, "gp": 13.96531122772145}}, {"month": "Jul", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5409208011.0, "diskon": 1520999996.0, "netto": 3888208015.0, "cost": 2650503286.0, "gp": 1237704729.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Agu", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5576203988.0, "diskon": 1541699998.0, "netto": 4034503990.0, "cost": 2682997424.0, "gp": 1351506597.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Sep", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 30, "active_days": 0, "budget_full": {"bruto": 5576204010.0, "diskon": 1541700000.0, "netto": 4034504010.0, "cost": 2682997410.0, "gp": 1351506600.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Okt", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5343337320.0, "diskon": 1560593320.0, "netto": 3782744000.0, "cost": 2558918374.0, "gp": 1223825626.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Nov", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 30, "active_days": 0, "budget_full": {"bruto": 5664337320.0, "diskon": 1618793340.0, "netto": 4045544010.0, "cost": 2687789370.0, "gp": 1357754640.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}, {"month": "Des", "is_elapsed": false, "is_partial": false, "days_elapsed": 0, "days_total": 31, "active_days": 0, "budget_full": {"bruto": 5664337329.0, "diskon": 1618793340.0, "netto": 4045543989.0, "cost": 2687789373.0, "gp": 1357754647.0}, "budget_prorated": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "real": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}, "variance": {"bruto": 0.0, "diskon": 0.0, "netto": 0.0, "cost": 0.0, "gp": 0.0}, "achievement_pct": {"bruto": 0, "diskon": 0, "netto": 0, "cost": 0, "gp": 0}}], "ytd_budget": {"bruto": 21188894871.0, "diskon": 5905639037.0, "netto": 15283255833.0, "cost": 9923523073.0, "gp": 5359732730.0}, "ytd_real": {"bruto": 14308975050.0, "diskon": 3766749365.0, "netto": 10542225695.0, "cost": 7133490205.0, "gp": 3408735487.0}, "ytd_variance": {"bruto": -6879919821.0, "diskon": -2138889672.0, "netto": -4741030138.0, "cost": -2790032868.0, "gp": -1950997243.0}, "ytd_achievement": {"bruto": 67.53053963934596, "diskon": 63.78224848150332, "netto": 68.97892576159691, "cost": 71.88465379204747, "gp": 63.598982611955726}, "daily_combo": [{"date": "2026-01-01", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-02", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-03", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-04", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-05", "real_netto": 26639750.0, "budget_netto": 87513426.0, "real_bruto": 42585000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-06", "real_netto": 89115601.0, "budget_netto": 87513426.0, "real_bruto": 147083500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-07", "real_netto": 184332075.0, "budget_netto": 87513426.0, "real_bruto": 255018900.0, "budget_bruto": 118716594.0}, {"date": "2026-01-08", "real_netto": 50658050.0, "budget_netto": 87513426.0, "real_bruto": 81050500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-09", "real_netto": 65003598.0, "budget_netto": 87513426.0, "real_bruto": 83749300.0, "budget_bruto": 118716594.0}, {"date": "2026-01-10", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-11", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-12", "real_netto": 44469600.0, "budget_netto": 87513426.0, "real_bruto": 71462500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-13", "real_netto": 117075641.0, "budget_netto": 87513426.0, "real_bruto": 191574300.0, "budget_bruto": 118716594.0}, {"date": "2026-01-14", "real_netto": 49317095.0, "budget_netto": 87513426.0, "real_bruto": 80285800.0, "budget_bruto": 118716594.0}, {"date": "2026-01-15", "real_netto": 71707525.0, "budget_netto": 87513426.0, "real_bruto": 102526000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-16", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-17", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-18", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-19", "real_netto": 25719860.0, "budget_netto": 87513426.0, "real_bruto": 33665500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-20", "real_netto": 66204953.0, "budget_netto": 87513426.0, "real_bruto": 102370400.0, "budget_bruto": 118716594.0}, {"date": "2026-01-21", "real_netto": 409814700.0, "budget_netto": 87513426.0, "real_bruto": 431276000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-22", "real_netto": 197334945.0, "budget_netto": 87513426.0, "real_bruto": 260379500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-23", "real_netto": 36769670.0, "budget_netto": 87513426.0, "real_bruto": 59446000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-24", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-25", "real_netto": 0.0, "budget_netto": 87513426.0, "real_bruto": 0.0, "budget_bruto": 118716594.0}, {"date": "2026-01-26", "real_netto": 351564738.0, "budget_netto": 87513426.0, "real_bruto": 443218000.0, "budget_bruto": 118716594.0}, {"date": "2026-01-27", "real_netto": 81997050.0, "budget_netto": 87513426.0, "real_bruto": 136035500.0, "budget_bruto": 118716594.0}, {"date": "2026-01-28", "real_netto": 194144220.0, "budget_netto": 87513426.0, "real_bruto": 317536400.0, "budget_bruto": 118716594.0}, {"date": "2026-01-29", "real_netto": 238245218.0, "budget_netto": 87513426.0, "real_bruto": 305433600.0, "budget_bruto": 118716594.0}, {"date": "2026-01-30", "real_netto": 400666345.0, "budget_netto": 87513426.0, "real_bruto": 505510600.0, "budget_bruto": 118716594.0}, {"date": "2026-01-31", "real_netto": 21861000.0, "budget_netto": 87513426.0, "real_bruto": 28374000.0, "budget_bruto": 118716594.0}, {"date": "2026-02-01", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-02", "real_netto": 44132250.0, "budget_netto": 91298531.0, "real_bruto": 72135000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-03", "real_netto": 112503930.0, "budget_netto": 91298531.0, "real_bruto": 167922000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-04", "real_netto": 253687650.0, "budget_netto": 91298531.0, "real_bruto": 312303000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-05", "real_netto": 47189380.0, "budget_netto": 91298531.0, "real_bruto": 67799900.0, "budget_bruto": 117954334.0}, {"date": "2026-02-06", "real_netto": 43363600.0, "budget_netto": 91298531.0, "real_bruto": 71411000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-07", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-08", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-09", "real_netto": 72115359.0, "budget_netto": 91298531.0, "real_bruto": 128115500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-10", "real_netto": 276958134.0, "budget_netto": 91298531.0, "real_bruto": 313991600.0, "budget_bruto": 117954334.0}, {"date": "2026-02-11", "real_netto": 69704700.0, "budget_netto": 91298531.0, "real_bruto": 80045500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-12", "real_netto": 108212050.0, "budget_netto": 91298531.0, "real_bruto": 142947500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-13", "real_netto": 187782970.0, "budget_netto": 91298531.0, "real_bruto": 229597700.0, "budget_bruto": 117954334.0}, {"date": "2026-02-14", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-15", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-16", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-17", "real_netto": 7535310.0, "budget_netto": 91298531.0, "real_bruto": 15015000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-18", "real_netto": 224390277.0, "budget_netto": 91298531.0, "real_bruto": 263810700.0, "budget_bruto": 117954334.0}, {"date": "2026-02-19", "real_netto": 109260325.0, "budget_netto": 91298531.0, "real_bruto": 140038500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-20", "real_netto": 93357230.0, "budget_netto": 91298531.0, "real_bruto": 139803000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-21", "real_netto": 142398000.0, "budget_netto": 91298531.0, "real_bruto": 142398000.0, "budget_bruto": 117954334.0}, {"date": "2026-02-22", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-02-23", "real_netto": 120008605.0, "budget_netto": 91298531.0, "real_bruto": 186498800.0, "budget_bruto": 117954334.0}, {"date": "2026-02-24", "real_netto": 284950953.0, "budget_netto": 91298531.0, "real_bruto": 364884800.0, "budget_bruto": 117954334.0}, {"date": "2026-02-25", "real_netto": 40561750.0, "budget_netto": 91298531.0, "real_bruto": 64918500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-26", "real_netto": 40386900.0, "budget_netto": 91298531.0, "real_bruto": 50245500.0, "budget_bruto": 117954334.0}, {"date": "2026-02-27", "real_netto": 295501191.0, "budget_netto": 91298531.0, "real_bruto": 364192300.0, "budget_bruto": 117954334.0}, {"date": "2026-02-28", "real_netto": 0.0, "budget_netto": 91298531.0, "real_bruto": 0.0, "budget_bruto": 117954334.0}, {"date": "2026-03-01", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-02", "real_netto": -3466576.0, "budget_netto": 54446424.0, "real_bruto": -2987846.0, "budget_bruto": 70695253.0}, {"date": "2026-03-03", "real_netto": 19046975.0, "budget_netto": 54446424.0, "real_bruto": 30648000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-04", "real_netto": 23934563.0, "budget_netto": 54446424.0, "real_bruto": 30935500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-05", "real_netto": 237062483.0, "budget_netto": 54446424.0, "real_bruto": 308142200.0, "budget_bruto": 70695253.0}, {"date": "2026-03-06", "real_netto": 36249607.0, "budget_netto": 54446424.0, "real_bruto": 68773707.0, "budget_bruto": 70695253.0}, {"date": "2026-03-07", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-08", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-09", "real_netto": 42804316.0, "budget_netto": 54446424.0, "real_bruto": 75166400.0, "budget_bruto": 70695253.0}, {"date": "2026-03-10", "real_netto": 88438148.0, "budget_netto": 54446424.0, "real_bruto": 167119800.0, "budget_bruto": 70695253.0}, {"date": "2026-03-11", "real_netto": 31564062.0, "budget_netto": 54446424.0, "real_bruto": 50737500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-12", "real_netto": 172805845.0, "budget_netto": 54446424.0, "real_bruto": 205561800.0, "budget_bruto": 70695253.0}, {"date": "2026-03-13", "real_netto": 16061391.0, "budget_netto": 54446424.0, "real_bruto": 35703000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-14", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-15", "real_netto": 270000000.0, "budget_netto": 54446424.0, "real_bruto": 270000000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-16", "real_netto": 160189789.0, "budget_netto": 54446424.0, "real_bruto": 194114480.0, "budget_bruto": 70695253.0}, {"date": "2026-03-17", "real_netto": 55688450.0, "budget_netto": 54446424.0, "real_bruto": 78658800.0, "budget_bruto": 70695253.0}, {"date": "2026-03-18", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-19", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-20", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-21", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-22", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-23", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-24", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-25", "real_netto": 3995600.0, "budget_netto": 54446424.0, "real_bruto": 7009000.0, "budget_bruto": 70695253.0}, {"date": "2026-03-26", "real_netto": 209310100.0, "budget_netto": 54446424.0, "real_bruto": 225927500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-27", "real_netto": 27967000.0, "budget_netto": 54446424.0, "real_bruto": 45998500.0, "budget_bruto": 70695253.0}, {"date": "2026-03-28", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-29", "real_netto": 0.0, "budget_netto": 54446424.0, "real_bruto": 0.0, "budget_bruto": 70695253.0}, {"date": "2026-03-30", "real_netto": 42702356.0, "budget_netto": 54446424.0, "real_bruto": 71727900.0, "budget_bruto": 70695253.0}, {"date": "2026-03-31", "real_netto": 251010520.0, "budget_netto": 54446424.0, "real_bruto": 313012600.0, "budget_bruto": 70695253.0}, {"date": "2026-04-01", "real_netto": 19693948.0, "budget_netto": 89098467.0, "real_bruto": 30481000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-02", "real_netto": 45938800.0, "budget_netto": 89098467.0, "real_bruto": 73338000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-03", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-04", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-05", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-06", "real_netto": 46413264.0, "budget_netto": 89098467.0, "real_bruto": 72937700.0, "budget_bruto": 135254022.0}, {"date": "2026-04-07", "real_netto": 29435425.0, "budget_netto": 89098467.0, "real_bruto": 49052500.0, "budget_bruto": 135254022.0}, {"date": "2026-04-08", "real_netto": 16568250.0, "budget_netto": 89098467.0, "real_bruto": 26845000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-09", "real_netto": 13710250.0, "budget_netto": 89098467.0, "real_bruto": 19410000.0, "budget_bruto": 135254022.0}, {"date": "2026-04-10", "real_netto": 73177255.0, "budget_netto": 89098467.0, "real_bruto": 107347384.0, "budget_bruto": 135254022.0}, {"date": "2026-04-11", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-12", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-13", "real_netto": 119591905.0, "budget_netto": 89098467.0, "real_bruto": 172552300.0, "budget_bruto": 135254022.0}, {"date": "2026-04-14", "real_netto": 26916424.0, "budget_netto": 89098467.0, "real_bruto": 45213500.0, "budget_bruto": 135254022.0}, {"date": "2026-04-15", "real_netto": 20435675.0, "budget_netto": 89098467.0, "real_bruto": 30383500.0, "budget_bruto": 135254022.0}, {"date": "2026-04-16", "real_netto": 106026369.0, "budget_netto": 89098467.0, "real_bruto": 144274700.0, "budget_bruto": 135254022.0}, {"date": "2026-04-17", "real_netto": 136172557.0, "budget_netto": 89098467.0, "real_bruto": 171148660.0, "budget_bruto": 135254022.0}, {"date": "2026-04-18", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-19", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-20", "real_netto": 46274348.0, "budget_netto": 89098467.0, "real_bruto": 89059700.0, "budget_bruto": 135254022.0}, {"date": "2026-04-21", "real_netto": 58789358.0, "budget_netto": 89098467.0, "real_bruto": 96447800.0, "budget_bruto": 135254022.0}, {"date": "2026-04-22", "real_netto": 68130813.0, "budget_netto": 89098467.0, "real_bruto": 92156300.0, "budget_bruto": 135254022.0}, {"date": "2026-04-23", "real_netto": 58091761.0, "budget_netto": 89098467.0, "real_bruto": 78998600.0, "budget_bruto": 135254022.0}, {"date": "2026-04-24", "real_netto": 56284011.0, "budget_netto": 89098467.0, "real_bruto": 90356740.0, "budget_bruto": 135254022.0}, {"date": "2026-04-25", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-26", "real_netto": 0.0, "budget_netto": 89098467.0, "real_bruto": 0.0, "budget_bruto": 135254022.0}, {"date": "2026-04-27", "real_netto": 75695640.0, "budget_netto": 89098467.0, "real_bruto": 115951400.0, "budget_bruto": 135254022.0}, {"date": "2026-04-28", "real_netto": 51030045.0, "budget_netto": 89098467.0, "real_bruto": 84177800.0, "budget_bruto": 135254022.0}, {"date": "2026-04-29", "real_netto": 349639081.0, "budget_netto": 89098467.0, "real_bruto": 409623198.0, "budget_bruto": 135254022.0}, {"date": "2026-04-30", "real_netto": 556427345.0, "budget_netto": 89098467.0, "real_bruto": 711096100.0, "budget_bruto": 135254022.0}, {"date": "2026-05-01", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-02", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-03", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-04", "real_netto": 35926193.0, "budget_netto": 119703355.0, "real_bruto": 60044000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-05", "real_netto": 55810370.0, "budget_netto": 119703355.0, "real_bruto": 90656900.0, "budget_bruto": 171987226.0}, {"date": "2026-05-06", "real_netto": 249250473.0, "budget_netto": 119703355.0, "real_bruto": 407339900.0, "budget_bruto": 171987226.0}, {"date": "2026-05-07", "real_netto": 9717000.0, "budget_netto": 119703355.0, "real_bruto": 16145500.0, "budget_bruto": 171987226.0}, {"date": "2026-05-08", "real_netto": 10817050.0, "budget_netto": 119703355.0, "real_bruto": 13113100.0, "budget_bruto": 171987226.0}, {"date": "2026-05-09", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-10", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-11", "real_netto": 17925531.0, "budget_netto": 119703355.0, "real_bruto": 28518902.0, "budget_bruto": 171987226.0}, {"date": "2026-05-12", "real_netto": 16002205.0, "budget_netto": 119703355.0, "real_bruto": 24892740.0, "budget_bruto": 171987226.0}, {"date": "2026-05-13", "real_netto": 73905234.0, "budget_netto": 119703355.0, "real_bruto": 108301000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-14", "real_netto": 65803859.0, "budget_netto": 119703355.0, "real_bruto": 105664300.0, "budget_bruto": 171987226.0}, {"date": "2026-05-15", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-16", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-17", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-18", "real_netto": 90646156.0, "budget_netto": 119703355.0, "real_bruto": 165941200.0, "budget_bruto": 171987226.0}, {"date": "2026-05-19", "real_netto": 49705850.0, "budget_netto": 119703355.0, "real_bruto": 84382500.0, "budget_bruto": 171987226.0}, {"date": "2026-05-20", "real_netto": 10470880.0, "budget_netto": 119703355.0, "real_bruto": 15515100.0, "budget_bruto": 171987226.0}, {"date": "2026-05-21", "real_netto": 50124290.0, "budget_netto": 119703355.0, "real_bruto": 70847200.0, "budget_bruto": 171987226.0}, {"date": "2026-05-22", "real_netto": 16438800.0, "budget_netto": 119703355.0, "real_bruto": 23306000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-23", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-24", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-25", "real_netto": 200180987.0, "budget_netto": 119703355.0, "real_bruto": 263903400.0, "budget_bruto": 171987226.0}, {"date": "2026-05-26", "real_netto": 67266444.0, "budget_netto": 119703355.0, "real_bruto": 109955390.0, "budget_bruto": 171987226.0}, {"date": "2026-05-27", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-28", "real_netto": 0.0, "budget_netto": 119703355.0, "real_bruto": 0.0, "budget_bruto": 171987226.0}, {"date": "2026-05-29", "real_netto": 210306237.0, "budget_netto": 119703355.0, "real_bruto": 271080430.0, "budget_bruto": 171987226.0}, {"date": "2026-05-30", "real_netto": 9773663.0, "budget_netto": 119703355.0, "real_bruto": 26730000.0, "budget_bruto": 171987226.0}, {"date": "2026-05-31", "real_netto": 43254000.0, "budget_netto": 119703355.0, "real_bruto": 72090000.0, "budget_bruto": 171987226.0}, {"date": "2026-06-01", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-02", "real_netto": 12633064.0, "budget_netto": 161865300.0, "real_bruto": 28549900.0, "budget_bruto": 218765133.0}, {"date": "2026-06-03", "real_netto": 8040700.0, "budget_netto": 161865300.0, "real_bruto": 13297000.0, "budget_bruto": 218765133.0}, {"date": "2026-06-04", "real_netto": 66543800.0, "budget_netto": 161865300.0, "real_bruto": 99773000.0, "budget_bruto": 218765133.0}, {"date": "2026-06-05", "real_netto": 34661930.0, "budget_netto": 161865300.0, "real_bruto": 56564300.0, "budget_bruto": 218765133.0}, {"date": "2026-06-06", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-07", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-08", "real_netto": 52933060.0, "budget_netto": 161865300.0, "real_bruto": 77004500.0, "budget_bruto": 218765133.0}, {"date": "2026-06-09", "real_netto": 44629970.0, "budget_netto": 161865300.0, "real_bruto": 66578800.0, "budget_bruto": 218765133.0}, {"date": "2026-06-10", "real_netto": 22603635.0, "budget_netto": 161865300.0, "real_bruto": 31125700.0, "budget_bruto": 218765133.0}, {"date": "2026-06-11", "real_netto": 37820128.0, "budget_netto": 161865300.0, "real_bruto": 56163900.0, "budget_bruto": 218765133.0}, {"date": "2026-06-12", "real_netto": 22584835.0, "budget_netto": 161865300.0, "real_bruto": 37734565.0, "budget_bruto": 218765133.0}, {"date": "2026-06-13", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-14", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-15", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-16", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-17", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-18", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-19", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-20", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-21", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-22", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-23", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-24", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-25", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-26", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-27", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-28", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-29", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-06-30", "real_netto": 0.0, "budget_netto": 161865300.0, "real_bruto": 0.0, "budget_bruto": 218765133.0}, {"date": "2026-07-01", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-02", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-03", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-04", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-05", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-06", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-07", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-08", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-09", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-10", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-11", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-12", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-13", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-14", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-15", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-16", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-17", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-18", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-19", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-20", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-21", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-22", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-23", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-24", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-25", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-26", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-27", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-28", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-29", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-30", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-07-31", "real_netto": 0.0, "budget_netto": 125426065.0, "real_bruto": 0.0, "budget_bruto": 174490581.0}, {"date": "2026-08-01", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-02", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-03", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-04", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-05", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-06", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-07", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-08", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-09", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-10", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-11", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-12", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-13", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-14", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-15", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-16", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-17", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-18", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-19", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-20", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-21", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-22", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-23", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-24", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-25", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-26", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-27", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-28", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-29", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-30", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-08-31", "real_netto": 0.0, "budget_netto": 130145290.0, "real_bruto": 0.0, "budget_bruto": 179877548.0}, {"date": "2026-09-01", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-02", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-03", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-04", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-05", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-06", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-07", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-08", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-09", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-10", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-11", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-12", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-13", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-14", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-15", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-16", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-17", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-18", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-19", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-20", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-21", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-22", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-23", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-24", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-25", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-26", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-27", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-28", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-29", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-09-30", "real_netto": 0.0, "budget_netto": 134483467.0, "real_bruto": 0.0, "budget_bruto": 185873467.0}, {"date": "2026-10-01", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-02", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-03", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-04", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-05", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-06", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-07", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-08", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-09", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-10", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-11", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-12", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-13", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-14", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-15", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-16", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-17", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-18", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-19", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-20", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-21", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-22", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-23", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-24", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-25", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-26", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-27", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-28", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-29", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-30", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-10-31", "real_netto": 0.0, "budget_netto": 122024000.0, "real_bruto": 0.0, "budget_bruto": 172365720.0}, {"date": "2026-11-01", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-02", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-03", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-04", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-05", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-06", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-07", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-08", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-09", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-10", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-11", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-12", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-13", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-14", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-15", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-16", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-17", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-18", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-19", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-20", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-21", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-22", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-23", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-24", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-25", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-26", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-27", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-28", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-29", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-11-30", "real_netto": 0.0, "budget_netto": 134851467.0, "real_bruto": 0.0, "budget_bruto": 188811244.0}, {"date": "2026-12-01", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-02", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-03", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-04", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-05", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-06", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-07", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-08", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-09", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-10", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-11", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-12", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-13", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-14", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-15", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-16", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-17", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-18", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-19", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-20", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-21", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-22", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-23", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-24", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-25", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-26", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-27", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-28", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-29", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-30", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}, {"date": "2026-12-31", "real_netto": 0.0, "budget_netto": 130501419.0, "real_bruto": 0.0, "budget_bruto": 182720559.0}]}};
+const RAW = DATA.omzet;
+const VAR = DATA.variance;
+
+const fmtRp = (n, opts={}) => {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (opts.compact) {
+    if (abs >= 1e9) return sign + 'Rp ' + (abs/1e9).toFixed(2).replace(/\.00$/,'') + ' M';
+    if (abs >= 1e6) return sign + 'Rp ' + (abs/1e6).toFixed(1).replace(/\.0$/,'') + ' jt';
+  }
+  return sign + 'Rp ' + abs.toLocaleString('id-ID', {maximumFractionDigits:0});
+};
+
+// ======================= NAV TABS =======================
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-'+tab.dataset.view).classList.add('active');
+    if (tab.dataset.view === 'bvr' && bvrChart) bvrChart.resize();
+    if (tab.dataset.view === 'real' && dailyChart) dailyChart.resize();
+  });
+});
+
+// ======================= VIEW: BUDGET VS REALISASI =======================
+const elapsedMonths = VAR.monthly.filter(m => m.is_elapsed);
+
+function achvStatus(pct) {
+  if (pct === null) return {cls:'flat', label:'-'};
+  if (pct >= 95) return {cls:'good', label:'Tercapai'};
+  if (pct >= 80) return {cls:'warn', label:'Mendekati'};
+  return {cls:'bad', label:'Di Bawah Target'};
+}
+
+// --- KPI BVR ---
+const ytdB = VAR.ytd_budget, ytdR = VAR.ytd_real, ytdV = VAR.ytd_variance, ytdA = VAR.ytd_achievement;
+const kpiRowBvr = document.getElementById('kpiRowBvr');
+const overallStatus = achvStatus(ytdA.netto);
+kpiRowBvr.innerHTML = `
+  <div class="kpi">
+    <div class="label">Budget Netto (YTD, prorata)</div>
+    <div class="value">${fmtRp(ytdB.netto, {compact:true})}</div>
+    <div class="delta flat">s.d ${new Date(VAR.last_actual_date).toLocaleDateString('id-ID',{day:'numeric',month:'long'})}</div>
+  </div>
+  <div class="kpi accent">
+    <div class="label">Realisasi Netto (YTD)</div>
+    <div class="value">${fmtRp(ytdR.netto, {compact:true})}</div>
+    <div class="delta ${ytdV.netto>=0?'up':'down'}">${ytdV.netto>=0?'+':''}${fmtRp(ytdV.netto, {compact:true})} vs budget</div>
+  </div>
+  <div class="kpi">
+    <div class="label">% Achievement Netto</div>
+    <div class="value">${ytdA.netto.toFixed(1)}%</div>
+    <div class="delta"><span class="achv-badge ${overallStatus.cls}">${overallStatus.label}</span></div>
+  </div>
+  <div class="kpi">
+    <div class="label">Gross Profit — Budget vs Real</div>
+    <div class="value">${fmtRp(ytdR.gp, {compact:true})}</div>
+    <div class="delta ${ytdA.gp>=95?'up':'down'}">${ytdA.gp.toFixed(1)}% dari budget ${fmtRp(ytdB.gp,{compact:true})}</div>
+  </div>
+`;
+
+// --- Chart BVR (bar budget vs real + line achievement%) ---
+const bvrCtx = document.getElementById('bvrChart').getContext('2d');
+const monthLabels = VAR.monthly.map(m => m.month);
+const budgetVals = VAR.monthly.map(m => m.is_elapsed ? m.budget_prorated.netto : m.budget_full.netto);
+const realVals = VAR.monthly.map(m => m.is_elapsed ? m.real.netto : null);
+const achvVals = VAR.monthly.map(m => m.is_elapsed ? m.achievement_pct.netto : null);
+
+const bvrChart = new Chart(bvrCtx, {
+  data: {
+    labels: monthLabels,
+    datasets: [
+      {
+        type: 'bar', label: 'Budget', data: budgetVals,
+        backgroundColor: 'rgba(221,190,140,0.55)', borderRadius: 3, order: 2,
+        yAxisID: 'y',
+      },
+      {
+        type: 'bar', label: 'Realisasi', data: realVals,
+        backgroundColor: '#7B96A8', borderRadius: 3, order: 2,
+        yAxisID: 'y',
+      },
+      {
+        type: 'line', label: '% Achievement', data: achvVals,
+        borderColor: '#C97A6B', backgroundColor: '#C97A6B', borderWidth: 2,
+        pointRadius: 4, pointBackgroundColor: '#C97A6B', tension: 0.2,
+        yAxisID: 'y1', order: 1, spanGaps: true,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+        titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+        titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+        bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 },
+        padding: 10,
+        callbacks: {
+          label: (item) => {
+            if (item.dataset.label === '% Achievement') return ' ' + item.raw?.toFixed(1) + '%';
+            return ' ' + item.dataset.label + ': ' + fmtRp(item.raw);
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:10.5} } },
+      y: {
+        position: 'left', grid: { color:'rgba(58,53,48,0.06)' },
+        ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) }
+      },
+      y1: {
+        position: 'right', min: 0, max: 130, grid: { display:false },
+        ticks: { color:'#C97A6B', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>v+'%' }
+      }
+    }
+  }
+});
+
+// --- Variance Table ---
+const varBody = document.getElementById('varianceBody');
+varBody.innerHTML = VAR.monthly.map(m => {
+  if (!m.is_elapsed) {
+    return `<tr class="future"><td>${m.month} 2026</td><td>${fmtRp(m.budget_full.netto)}</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+  }
+  const bud = m.budget_prorated.netto;
+  const real = m.real.netto;
+  const variance = m.variance.netto;
+  const achv = m.achievement_pct.netto;
+  const status = achvStatus(achv);
+  const partialNote = m.is_partial ? ` <span style="color:var(--ink-faint); font-style:italic;">(${m.days_elapsed}/${m.days_total} hari)</span>` : '';
+  return `<tr>
+    <td>${m.month} 2026${partialNote}</td>
+    <td>${fmtRp(bud)}</td>
+    <td>${fmtRp(real)}</td>
+    <td class="variance-cell ${variance>=0?'pos':'neg'}">${variance>=0?'+':''}${fmtRp(variance)}</td>
+    <td>${achv.toFixed(1)}%</td>
+    <td><span class="achv-badge ${status.cls}">${status.label}</span></td>
+  </tr>`;
+}).join('');
+
+document.getElementById('ftBudget').textContent = fmtRp(ytdB.netto);
+document.getElementById('ftReal').textContent = fmtRp(ytdR.netto);
+const ftVarEl = document.getElementById('ftVariance');
+ftVarEl.textContent = (ytdV.netto>=0?'+':'') + fmtRp(ytdV.netto);
+ftVarEl.className = 'variance-cell ' + (ytdV.netto>=0?'pos':'neg');
+document.getElementById('ftAchv').textContent = ytdA.netto.toFixed(1) + '%';
+
+// --- Insights BVR ---
+const bestAchv = elapsedMonths.reduce((a,b)=> (b.achievement_pct.netto > a.achievement_pct.netto && !b.is_partial) ? b : a, elapsedMonths[0]);
+const worstAchv = elapsedMonths.filter(m=>!m.is_partial).reduce((a,b)=> b.achievement_pct.netto < a.achievement_pct.netto ? b : a);
+const fullMonths = elapsedMonths.filter(m=>!m.is_partial);
+const decliningTrend = fullMonths.length >= 2 && fullMonths[fullMonths.length-1].achievement_pct.netto < fullMonths[0].achievement_pct.netto;
+
+document.getElementById('insightStripBvr').innerHTML = `
+  <div class="insight">
+    <div class="tag">Bulan Terbaik</div>
+    <div class="txt"><b>${bestAchv.month}</b> mencatat achievement tertinggi sebesar <b>${bestAchv.achievement_pct.netto.toFixed(1)}%</b> dari budget.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Bulan Terlemah</div>
+    <div class="txt"><b>${worstAchv.month}</b> berada di <b>${worstAchv.achievement_pct.netto.toFixed(1)}%</b> dari budget — gap terbesar di antara bulan penuh.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Tren Achievement</div>
+    <div class="txt">${decliningTrend ? `Achievement <b>menurun</b> dari ${fullMonths[0].month} (${fullMonths[0].achievement_pct.netto.toFixed(0)}%) ke ${fullMonths[fullMonths.length-1].month} (${fullMonths[fullMonths.length-1].achievement_pct.netto.toFixed(0)}%). Perlu ditelaah penyebabnya.` : `Performa relatif terjaga sepanjang bulan-bulan yang sudah berjalan penuh.`}</div>
+  </div>
+`;
+
+// ======================= VIEW: DETAIL REALISASI =======================
+const kpiRow = document.getElementById('kpiRow');
+const ytd = RAW.ytd;
+const gpMargin = (ytd.gp / ytd.netto * 100).toFixed(1);
+const discRate = (ytd.diskon / ytd.bruto * 100).toFixed(1);
+
+kpiRow.innerHTML = `
+  <div class="kpi accent">
+    <div class="label">Pendapatan Bruto (YTD)</div>
+    <div class="value">${fmtRp(ytd.bruto, {compact:true})}</div>
+    <div class="delta flat">${RAW.active_days_count} hari transaksi</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Pendapatan Netto (YTD)</div>
+    <div class="value">${fmtRp(ytd.netto, {compact:true})}</div>
+    <div class="delta flat">Rata-rata ${fmtRp(RAW.avg_daily_netto, {compact:true})}/hari aktif</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Gross Profit (YTD)</div>
+    <div class="value">${fmtRp(ytd.gp, {compact:true})}</div>
+    <div class="delta up">Margin GP ${gpMargin}%</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Total Diskon (YTD)</div>
+    <div class="value">${fmtRp(ytd.diskon, {compact:true})}</div>
+    <div class="delta down">${discRate}% dari Bruto</div>
+  </div>
+`;
+
+// --- Monthly table ---
+const tbody = document.getElementById('monthlyBody');
+const maxGp = Math.max(...RAW.monthly.map(m=>m.gp));
+tbody.innerHTML = RAW.monthly.map(m => {
+  const isEmpty = m.active_days === 0;
+  return `<tr class="${isEmpty?'empty':''}">
+    <td>${m.month} 2026</td>
+    <td>${isEmpty ? '—' : m.active_days}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.bruto)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.diskon)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.netto)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.cost)}</td>
+    <td>${isEmpty ? '—' : fmtRp(m.gp)}</td>
+  </tr>`;
+}).join('');
+
+document.getElementById('ftDays').textContent = RAW.active_days_count;
+document.getElementById('ftBruto').textContent = fmtRp(ytd.bruto);
+document.getElementById('ftDiskon').textContent = fmtRp(ytd.diskon);
+document.getElementById('ftNetto').textContent = fmtRp(ytd.netto);
+document.getElementById('ftCost').textContent = fmtRp(ytd.cost);
+document.getElementById('ftGp').textContent = fmtRp(ytd.gp);
+
+// --- Daily chart ---
+const ctx = document.getElementById('dailyChart').getContext('2d');
+let dailyChart;
+function buildChart(range) {
+  let data = RAW.daily;
+  if (range === 'ytd') data = RAW.daily.filter(d => d.date <= RAW.last_actual_date);
+  if (range === '90') data = RAW.daily.filter(d => d.date <= RAW.last_actual_date).slice(-90);
+
+  const labels = data.map(d => new Date(d.date).toLocaleDateString('id-ID', {day:'2-digit', month:'short'}));
+  const nettoData = data.map(d => d.netto);
+
+  if (dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: 'Pendapatan Netto', data: nettoData,
+      borderColor: '#C99A5B', backgroundColor: 'rgba(201,154,91,0.10)',
+      borderWidth: 1.8, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#C99A5B',
+      tension: 0.15, fill: true,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#3A3530', borderColor: '#E6DFD0', borderWidth: 1,
+          titleColor: '#D8CFBE', bodyColor: '#FBF8F2',
+          titleFont: { family: 'IBM Plex Mono, monospace', size: 11 },
+          bodyFont: { family: 'IBM Plex Mono, monospace', size: 12 }, padding: 10,
+          callbacks: { label: (item) => ' ' + fmtRp(item.raw) }
+        }
+      },
+      scales: {
+        x: { grid: { display:false }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, maxTicksLimit:12 } },
+        y: { grid: { color:'rgba(58,53,48,0.06)' }, ticks: { color:'#B3A993', font:{family:'IBM Plex Mono', size:9.5}, callback:(v)=>fmtRp(v,{compact:true}) } }
+      }
+    }
+  });
+}
+buildChart('all');
+document.querySelectorAll('.chart-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chart-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    buildChart(btn.dataset.range);
+  });
+});
+
+// --- Calendar heatmap ---
+const calContainer = document.getElementById('calendarContainer');
+const monthNamesFull = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const nonZero = RAW.daily.filter(d=>d.netto>0).map(d=>d.netto).sort((a,b)=>a-b);
+function levelFor(val) {
+  if (val <= 0) return 0;
+  const p = nonZero.indexOf(val) / nonZero.length;
+  if (p < 0.25) return 1; if (p < 0.5) return 2; if (p < 0.75) return 3; return 4;
+}
+let calHtml = '';
+for (let m = 0; m < 12; m++) {
+  const monthData = RAW.daily.filter(d => new Date(d.date).getMonth() === m);
+  if (monthData.length === 0) continue;
+  calHtml += `<div class="cal-month-label">${monthNamesFull[m]} 2026</div><div class="cal-grid">`;
+  const firstDay = new Date(monthData[0].date).getDay();
+  const offset = (firstDay + 6) % 7;
+  for (let i=0;i<offset;i++) calHtml += `<div class="cal-day" style="visibility:hidden"></div>`;
+  monthData.forEach(d => {
+    const isFuture = d.date > RAW.last_actual_date;
+    const lvl = isFuture ? 0 : levelFor(d.netto);
+    const dt = new Date(d.date);
+    const tip = `${dt.getDate()} ${monthNamesFull[m].slice(0,3)}: ${isFuture ? 'belum terjadi' : fmtRp(d.netto)}`;
+    calHtml += `<div class="cal-day" data-level="${lvl}" ${isFuture?'data-future="1"':''} data-tip="${tip}"></div>`;
+  });
+  calHtml += `</div>`;
+}
+calContainer.innerHTML = calHtml;
+
+// --- Insights Realisasi ---
+const best = RAW.best_day;
+const monthsWithData = RAW.monthly.filter(m=>m.active_days>0);
+const bestMonth = monthsWithData.reduce((a,b)=> a.netto > b.netto ? a : b);
+const lowMonth = monthsWithData.reduce((a,b)=> a.netto < b.netto ? a : b);
+const zeroDays = RAW.daily.filter(d => d.date <= RAW.last_actual_date && d.bruto === 0).length;
+const dtBest = new Date(best.date).toLocaleDateString('id-ID', {day:'numeric', month:'long'});
+
+document.getElementById('insightStrip').innerHTML = `
+  <div class="insight">
+    <div class="tag">Hari Terbaik</div>
+    <div class="txt">Transaksi tertinggi tercatat pada <b>${dtBest}</b> dengan pendapatan netto <b>${fmtRp(best.netto, {compact:true})}</b>.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Tren Bulanan</div>
+    <div class="txt"><b>${bestMonth.month}</b> menjadi bulan dengan realisasi tertinggi (${fmtRp(bestMonth.netto,{compact:true})}), sementara <b>${lowMonth.month}</b> tercatat paling rendah di antara bulan aktif.</div>
+  </div>
+  <div class="insight">
+    <div class="tag">Pola Operasional</div>
+    <div class="txt">Tercatat <b>${zeroDays} hari tanpa transaksi</b> sejak awal tahun — kemungkinan hari tutup operasional/libur toko.</div>
+  </div>
+`;
+</script>
+</body>
+</html>
