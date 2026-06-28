@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 00:45 WIB | Tambah sort interaktif (klik header) ke 19 tabel di semua menu via utility generik; invSkuTable & Analysis pivot sudah punya sort sendiri -->
+<!-- BUILD: 2026-06-28 01:30 WIB | P&L: Working Capital disederhanakan jadi snapshot tahun ini saja (2026), hapus chart & tabel tren tahunan -->
 
 <html lang="id">
 <head>
@@ -1832,6 +1832,7 @@
   <div class="nav-tabs" id="pnlNavTabs">
     <button class="nav-tab active" data-pnlview="laporan">Laporan</button>
     <button class="nav-tab" data-pnlview="yoy">YoY Analysis</button>
+    <button class="nav-tab" data-pnlview="wc">Working Capital</button>
   </div>
 
   <div id="pnlView-laporan" class="pnl-view">
@@ -2006,6 +2007,25 @@
     </div>
     <div class="pnl-table-insight" id="yoyQtrInsight"></div>
     <div class="pnl-table-actionplan" id="yoyQtrActionPlan"></div>
+  </div>
+
+  </div>
+
+  <div id="pnlView-wc" class="pnl-view" style="display:none;">
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Working Capital Cycle</h2>
+      <span class="note">DSO, DIO, DPO &amp; Cash Conversion Cycle &middot; kondisi tahun ini (2026)</span>
+    </div>
+    <div class="kpi-row" id="wcKpiRow" style="grid-template-columns:repeat(3,1fr);"></div>
+    <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);line-height:1.6;">
+      DPO dihitung dengan HPP sebagai pendekatan untuk Purchases (data pembelian asli tidak tersedia).
+      "DPO Eksternal" hanya menghitung hutang ke vendor pihak ketiga (exclude entitas berafiliasi grup Syaamil/Sygma),
+      diidentifikasi otomatis dari nama vendor di data AP.
+    </div>
+    <div class="pnl-table-insight" id="wcInsight"></div>
+    <div class="pnl-table-actionplan" id="wcActionPlan"></div>
   </div>
 
   </div>
@@ -10855,6 +10875,127 @@ function pnlRenderYearSelector() {
   });
 }
 
+// ============ WORKING CAPITAL TAB ============
+(function() {
+  const AR_ITEMS = window.__AR_ITEMS__;
+  const AP_ITEMS = window.__AP_ITEMS__;
+  const INV_ITEMS = window.__INV_ITEMS__;
+  if (!AR_ITEMS || !AP_ITEMS || !INV_ITEMS) return;
+
+  const INTERCOMPANY_PATTERNS = ['sygma', 'syaamil', 'smi', 'smc', 'saa', 'sdi', 'ski', 'sdq', 'mrm'];
+  function isIntercompanyVendor(name) {
+    const n = (name||'').toLowerCase();
+    return INTERCOMPANY_PATTERNS.some(p => n.includes(p));
+  }
+
+  function fmtRpWc(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs >= 1e9) return sign + 'Rp ' + (abs/1e9).toLocaleString('id-ID',{maximumFractionDigits:2}) + ' M';
+    if (abs >= 1e6) return sign + 'Rp ' + (abs/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt';
+    return sign + 'Rp ' + abs.toLocaleString('id-ID', {maximumFractionDigits:0});
+  }
+
+  function isLeapYear(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+  function daysInYear(y) { return isLeapYear(y) ? 366 : 365; }
+
+  // Ending balances (current snapshot, not year-specific — AR/AP/Inventory don't carry historical snapshots per year)
+  const arEnding = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+  const apEnding = AP_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+  const apExternalEnding = AP_ITEMS.filter(it=>!isIntercompanyVendor(it.vendor)).reduce((s,it)=>s+it.nominal, 0);
+  const invEnding = INV_ITEMS.reduce((s,it)=>s+it.hpp, 0);
+
+  // Per-year Revenue (Netto) and HPP from P&L, used as the flow denominator for each year's ratios.
+  // For the current (incomplete) year, only actual months are summed and the day-count is prorated.
+  function yearFlowAndDays(y) {
+    let netto = 0, hpp = 0, days = 0;
+    for (let m = 1; m <= 12; m++) {
+      if (pnlIsFutureMonth(y, m)) continue;
+      const row = PNL_DATA.data[y+'-'+m];
+      if (!row) continue;
+      netto += row['Pendapatan Netto']||0;
+      hpp += row['HPP']||0;
+      days += new Date(y, m, 0).getDate();
+    }
+    return { netto, hpp, days };
+  }
+
+  function computeRatios(netto, hpp, days) {
+    const dso = netto ? (arEnding/netto*days) : null;
+    const dio = hpp ? (invEnding/hpp*days) : null;
+    const dpo = hpp ? (apEnding/hpp*days) : null;
+    const dpoExt = hpp ? (apExternalEnding/hpp*days) : null;
+    const ccc = (dso!==null && dio!==null && dpo!==null) ? (dso+dio-dpo) : null;
+    const cccExt = (dso!==null && dio!==null && dpoExt!==null) ? (dso+dio-dpoExt) : null;
+    return { dso, dio, dpo, dpoExt, ccc, cccExt };
+  }
+
+  // --- Snapshot KPI row: use the latest year with actual data ---
+  const years = PNL_DATA.years;
+  const latestYear = years[years.length-1];
+  const latestFlow = yearFlowAndDays(latestYear);
+  const snap = computeRatios(latestFlow.netto, latestFlow.hpp, latestFlow.days);
+
+  function fmtDays(n) { return n===null ? '—' : Math.round(n) + ' hari'; }
+
+  const kpiDefs = [
+    { label: 'DSO (Days Sales Outstanding)', val: snap.dso, sub: `AR ${fmtRpWc(arEnding)}` },
+    { label: 'DIO (Days Inventory Outstanding)', val: snap.dio, sub: `Inventory ${fmtRpWc(invEnding)}` },
+    { label: 'DPO (Keseluruhan)', val: snap.dpo, sub: `AP total ${fmtRpWc(apEnding)}` },
+    { label: 'DPO (Eksternal saja)', val: snap.dpoExt, sub: `AP eksternal ${fmtRpWc(apExternalEnding)}` },
+    { label: 'CCC (vs DPO Keseluruhan)', val: snap.ccc, sub: 'DSO + DIO - DPO' },
+    { label: 'CCC (vs DPO Eksternal)', val: snap.cccExt, sub: 'DSO + DIO - DPO Eksternal' },
+  ];
+  document.getElementById('wcKpiRow').innerHTML = kpiDefs.map(k => `
+    <div class="kpi">
+      <div class="label">${k.label}</div>
+      <div class="value"${k.val!==null && k.val<0 ? ' style="color:var(--red);"' : ''}>${fmtDays(k.val)}</div>
+      <div class="delta flat">${k.sub}</div>
+    </div>
+  `).join('');
+
+  // --- Executive Summary + Action Plan ---
+  const insightParts = [];
+  insightParts.push(`<span class="pti-tag">Snapshot ${latestYear}</span>DSO <b>${fmtDays(snap.dso)}</b> menunjukkan piutang baru tertagih jauh lebih lambat dari TOP resmi 45 hari. DIO <b>${fmtDays(snap.dio)}</b> relatif sehat. DPO keseluruhan <b>${fmtDays(snap.dpo)}</b> sangat panjang karena ${fmtRpWc(apEnding-apExternalEnding)} dari total AP adalah hutang intercompany — DPO eksternal murni jauh lebih realistis di <b>${fmtDays(snap.dpoExt)}</b>.`);
+  insightParts.push(`<b>Cash Conversion Cycle:</b> dengan DPO eksternal, CCC adalah <b>${fmtDays(snap.cccExt)}</b> — ${snap.cccExt!==null && snap.cccExt>0 ? 'artinya SEA perlu mendanai operasional selama periode ini sebelum kas masuk dari penjualan terealisasi.' : 'posisi negatif berarti secara rata-rata kas dari penjualan masuk lebih cepat daripada kewajiban ke vendor eksternal jatuh tempo.'}`);
+
+  const wcActions = [];
+  if (snap.dso !== null && snap.dso > 60) {
+    wcActions.push({
+      priority: 1,
+      title: 'DSO jauh di atas TOP resmi — perlu percepatan penagihan',
+      desc: `DSO ${fmtDays(snap.dso)} berarti rata-rata piutang baru cair lebih dari ${Math.round(snap.dso/45)}x lipat TOP 45 hari. Ini sejalan dengan temuan piutang macet kronis di menu AR — prioritaskan penagihan customer dengan piutang umur terpanjang.`
+    });
+  }
+  wcActions.push({
+    priority: 2,
+    title: 'Pisahkan AP intercompany dari AP operasional dalam pelaporan rutin',
+    desc: `Karena ${(((apEnding-apExternalEnding)/apEnding)*100).toFixed(0)}% dari AP adalah hutang antar-entitas grup, DPO keseluruhan tidak mencerminkan kecepatan bayar vendor yang sesungguhnya. Gunakan DPO Eksternal sebagai metrik operasional, dan selesaikan AP intercompany lewat keputusan struktur permodalan grup secara terpisah.`
+  });
+  wcActions.push({
+    priority: 3,
+    title: 'Pantau DIO sebagai indikator kesehatan stok',
+    desc: `DIO saat ini ${fmtDays(snap.dio)}. Selama tetap stabil di kisaran ini, perputaran stok sehat — naik signifikan bisa jadi tanda overstocking atau penurunan permintaan, cek menu Inventory untuk detail per SKU.`
+  });
+
+  const priorityLabel = { 1:'P1', 2:'P2', 3:'P3' };
+  const insightEl = document.getElementById('wcInsight');
+  if (insightEl) insightEl.innerHTML = insightParts.map(p=>`<p>${p}</p>`).join('');
+  const apEl = document.getElementById('wcActionPlan');
+  if (apEl) {
+    apEl.innerHTML = wcActions.map(a => `
+      <div class="ap-item">
+        <div class="ap-priority p${a.priority}">${priorityLabel[a.priority]}</div>
+        <div class="ap-body">
+          <div class="ap-title">${a.title}</div>
+          <div class="ap-desc">${a.desc}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+})();
+
 // ============ YoY ANALYSIS (sub-tab) ============
 document.querySelectorAll('#pnlNavTabs .nav-tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -10863,6 +11004,8 @@ document.querySelectorAll('#pnlNavTabs .nav-tab').forEach(btn => {
     const view = btn.dataset.pnlview;
     document.getElementById('pnlView-laporan').style.display = (view === 'laporan') ? 'block' : 'none';
     document.getElementById('pnlView-yoy').style.display = (view === 'yoy') ? 'block' : 'none';
+    const wcEl = document.getElementById('pnlView-wc');
+    if (wcEl) wcEl.style.display = (view === 'wc') ? 'block' : 'none';
   });
 });
 
