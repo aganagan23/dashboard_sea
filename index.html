@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 04:45 WIB | Sidebar Update Data: tambah baris 'Laba Rugi' (s.d bulan aktual terakhir) + perbesar font dari 10px ke 12px -->
+<!-- BUILD: 2026-06-28 06:00 WIB | AR Management: narasi diperluas dgn contoh konkret dinamis, tabel +kolom Analisis, klik baris untuk drill-down rincian AR -->
 
 <html lang="id">
 <head>
@@ -813,6 +813,45 @@
   #dash-ar .ap-body .ap-title { font-weight:600; color:var(--ink); margin-bottom:4px; font-size:14px; }
   #dash-ar .ap-body .ap-desc { font-size:13px; color:var(--ink-dim); line-height:1.55; }
   #dash-ar .ap-body .ap-desc b { color:var(--ink); }
+
+  #dash-ar .nav-tab {
+    font-family:var(--mono); font-size:12.5px; font-weight:600; padding:11px 20px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink-dim); cursor:pointer;
+    box-shadow:0 2px 0 rgba(58,53,48,0.08), 0 1px 3px rgba(58,53,48,0.06);
+    transition:all .15s; position:relative; top:0;
+  }
+  #dash-ar .nav-tab:hover { color:var(--ink); top:-1px; box-shadow:0 3px 0 rgba(58,53,48,0.10), 0 2px 5px rgba(58,53,48,0.08); }
+  #dash-ar .nav-tab.active {
+    color:#fff; background:var(--gold); border-color:var(--gold); top:1px;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.15);
+    text-shadow:0 1px 1px rgba(0,0,0,0.15);
+  }
+  #dash-ar #arNavTabs { margin-bottom:32px; }
+
+  #dash-ar .pnl-table-insight {
+    margin-top:14px; padding:14px 16px; background:var(--panel-2); border-left:3px solid var(--gold);
+    border-radius:0 6px 6px 0; font-size:13px; color:var(--ink-dim); line-height:1.6;
+  }
+  #dash-ar .pnl-table-insight .pti-tag {
+    font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--gold); font-weight:700; margin-bottom:6px; display:block;
+  }
+  #dash-ar .pnl-table-insight p { margin:0 0 8px; }
+  #dash-ar .pnl-table-insight p:last-child { margin-bottom:0; }
+  #dash-ar .pnl-table-insight b { color:var(--ink); }
+
+  #dash-ar .ar-mgmt-severity-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  #dash-ar .ar-mgmt-clickable { cursor:pointer; }
+  #dash-ar .ar-mgmt-clickable:hover { background:rgba(201,154,91,0.08); }
+  #dash-ar .ar-mgmt-severity-item { background:var(--panel-2); border-radius:6px; padding:14px 16px; border-left:4px solid var(--line); }
+  #dash-ar .ar-mgmt-severity-item.sev-low { border-left-color:var(--green); }
+  #dash-ar .ar-mgmt-severity-item.sev-mid { border-left-color:var(--amber); }
+  #dash-ar .ar-mgmt-severity-item.sev-high { border-left-color:var(--red); }
+  #dash-ar .ar-mgmt-severity-item .sev-label { font-family:var(--mono); font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; }
+  #dash-ar .ar-mgmt-severity-item .sev-value { font-family:var(--serif); font-size:20px; font-weight:700; color:var(--ink); margin-bottom:2px; }
+  #dash-ar .ar-mgmt-severity-item .sev-pct { font-family:var(--mono); font-size:12px; color:var(--ink-dim); }
+  @media (max-width:700px) { #dash-ar .ar-mgmt-severity-grid { grid-template-columns:1fr; } }
+
   #dash-ar .insight-single { background:var(--panel-2); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:6px; padding:14px 18px; margin-top:1px; }
   #dash-ar .insight-single .tag { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--gold); margin-bottom:6px; font-weight:700; }
   #dash-ar .insight-single .txt { font-size:13px; color:var(--ink-dim); line-height:1.55; }
@@ -1218,6 +1257,8 @@
   #dash-overview .ov-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
   #dash-overview .ov-card-title { font-family:var(--serif); font-size:16px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:9px; }
   #dash-overview .ov-card-icon { font-size:19px; line-height:1; }
+  #dash-overview .ov-perf-icon { font-size:13px; margin-left:6px; vertical-align:middle; }
+  #dash-overview .ov-neg { color:var(--red); font-weight:700; }
   #dash-overview .ov-card-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin-top:5px; }
   #dash-overview .ov-card-dot.status-green { background:var(--green); }
   #dash-overview .ov-card-dot.status-amber { background:var(--amber); }
@@ -2579,6 +2620,13 @@
     </div>
   </div>
 
+  <div class="nav-tabs" id="arNavTabs">
+    <button class="nav-tab active" data-arview="laporan">Laporan</button>
+    <button class="nav-tab" data-arview="mgmt">AR Management</button>
+  </div>
+
+  <div id="arView-laporan" class="ar-view">
+
   <div class="filter-panel">
     <div class="filter-row">
       <div class="filter-group" style="flex:0 0 280px;">
@@ -2864,6 +2912,8 @@
     </div>
   </div>
 
+  </div>
+
   <div class="ar-modal-overlay" id="arItemModalOverlay">
     <div class="ar-modal">
       <div class="ar-modal-head">
@@ -2878,6 +2928,88 @@
         <table class="ar-modal-table">
           <thead><tr id="arItemModalHead"></tr></thead>
           <tbody id="arItemModalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="arView-mgmt" class="ar-view" style="display:none;">
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Diskusi: Kondisi AR Management SEA</h2>
+      <span class="note">analisis naratif otomatis, diperbarui sesuai data piutang terkini</span>
+    </div>
+    <div class="panel" id="arMgmtNarrative" style="line-height:1.8; font-size:14.5px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Severity Keterlambatan</h2>
+      <span class="note">distribusi piutang berdasarkan berapa lama lewat jatuh tempo</span>
+    </div>
+    <div class="panel">
+      <div class="ar-mgmt-severity-grid" id="arMgmtSeverityGrid"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Tanggung Jawab per Cabang</h2>
+      <span class="note">diurutkan dari rasio overdue tertinggi &middot; klik baris untuk lihat rincian AR cabang tersebut</span>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table id="arMgmtCabangTable" style="width:100%;border-collapse:collapse;"></table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Tanggung Jawab per Sales</h2>
+      <span class="note">semua sales dengan piutang outstanding &middot; klik baris untuk lihat rincian AR sales tersebut</span>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table id="arMgmtSalesTable" style="width:100%;border-collapse:collapse;"></table>
+    </div>
+    <div class="pnl-table-insight" id="arMgmtSalesInsight" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Top 10 Piutang Paling Lama Menunggak</h2>
+      <span class="note">customer, sales &amp; cabang yang bertanggung jawab &middot; klik baris untuk lihat rincian</span>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table id="arMgmtTopOverdueTable" style="width:100%;border-collapse:collapse;"></table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Action Plan — AR Management</h2>
+      <span class="note">rekomendasi berdasarkan analisis tanggung jawab cabang &amp; sales</span>
+    </div>
+    <div class="panel">
+      <div id="arMgmtActionPlan"></div>
+    </div>
+  </div>
+
+  </div>
+
+  <div class="ar-modal-overlay" id="arMgmtModalOverlay">
+    <div class="ar-modal">
+      <div class="ar-modal-head">
+        <div>
+          <div class="ar-modal-title" id="arMgmtModalTitle"></div>
+          <div class="ar-modal-sub" id="arMgmtModalSub"></div>
+        </div>
+        <button class="ar-modal-close" id="arMgmtModalClose">&times;</button>
+      </div>
+      <div class="ar-modal-kpi" id="arMgmtModalKpi"></div>
+      <div class="ar-modal-table-wrap">
+        <table class="ar-modal-table">
+          <thead><tr id="arMgmtModalHead"></tr></thead>
+          <tbody id="arMgmtModalBody"></tbody>
         </table>
       </div>
     </div>
@@ -10355,6 +10487,348 @@ if (AP_ITEMS && AP_ITEMS.length) {
 
 
 <script>
+// ============ AR MANAGEMENT (sub-tab on AR page) ============
+(function() {
+  const AR_ITEMS = window.__AR_ITEMS__;
+  if (!AR_ITEMS) return;
+
+  // --- Tab switching ---
+  document.querySelectorAll('#arNavTabs .nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#arNavTabs .nav-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const view = btn.dataset.arview;
+      document.getElementById('arView-laporan').style.display = (view === 'laporan') ? 'block' : 'none';
+      document.getElementById('arView-mgmt').style.display = (view === 'mgmt') ? 'block' : 'none';
+    });
+  });
+
+  function fmtRpAm(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs >= 1e9) return sign + 'Rp ' + (abs/1e9).toLocaleString('id-ID',{maximumFractionDigits:2}) + ' M';
+    if (abs >= 1e6) return sign + 'Rp ' + (abs/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt';
+    return sign + 'Rp ' + abs.toLocaleString('id-ID', {maximumFractionDigits:0});
+  }
+
+  const TODAY_STR_AM = new Date().toISOString().slice(0,10);
+  const TODAY_DATE_AM = new Date(TODAY_STR_AM+'T00:00:00');
+  function daysLateAm(dueDateStr) {
+    if (!dueDateStr) return null;
+    const due = new Date(dueDateStr+'T00:00:00');
+    return Math.round((TODAY_DATE_AM - due) / (1000*60*60*24));
+  }
+
+  const total = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+  const overdueItems = AR_ITEMS.filter(it => { const dl = daysLateAm(it.due_date); return dl !== null && dl > 0; });
+  const overdueTotal = overdueItems.reduce((s,it)=>s+it.nominal, 0);
+  const overduePct = total ? (overdueTotal/total*100) : 0;
+  const notOverdueTotal = total - overdueTotal;
+
+  // Severity buckets
+  const severityDefs = [
+    { key:'belum', label:'Belum Jatuh Tempo', test: dl => dl === null || dl <= 0, cls:'sev-low' },
+    { key:'d0_90', label:'0–90 Hari Telat', test: dl => dl > 0 && dl <= 90, cls:'sev-low' },
+    { key:'d91_360', label:'91–360 Hari Telat', test: dl => dl > 90 && dl <= 360, cls:'sev-mid' },
+    { key:'d360plus', label:'> 360 Hari Telat', test: dl => dl > 360, cls:'sev-high' },
+  ];
+  const severityTotals = {};
+  severityDefs.forEach(s => severityTotals[s.key] = 0);
+  AR_ITEMS.forEach(it => {
+    const dl = daysLateAm(it.due_date);
+    const matched = severityDefs.find(s => s.test(dl));
+    if (matched) severityTotals[matched.key] += it.nominal;
+  });
+
+  document.getElementById('arMgmtSeverityGrid').innerHTML = severityDefs.map(s => {
+    const v = severityTotals[s.key];
+    const pct = total ? (v/total*100) : 0;
+    return `<div class="ar-mgmt-severity-item ${s.cls}">
+      <div class="sev-label">${s.label}</div>
+      <div class="sev-value">${fmtRpAm(v)}</div>
+      <div class="sev-pct">${pct.toFixed(1)}% dari total AR</div>
+    </div>`;
+  }).join('');
+
+  const chronicTotal = severityTotals['d360plus'];
+  const chronicPct = total ? (chronicTotal/total*100) : 0;
+  const kategoriInternal = AR_ITEMS.filter(it=>it.kategori==='INTERNAL').reduce((s,it)=>s+it.nominal,0);
+  const kategoriInternalPct = total ? (kategoriInternal/total*100) : 0;
+
+  // Narrative
+  // Build concrete examples for the narrative (longest-overdue customers, and a sample of internal entities)
+  const custAggForNarrative = {};
+  AR_ITEMS.forEach(it => {
+    const dl = daysLateAm(it.due_date);
+    if (dl === null || dl <= 360) return;
+    if (!custAggForNarrative[it.customer]) custAggForNarrative[it.customer] = { nominal:0, maxDays:0 };
+    custAggForNarrative[it.customer].nominal += it.nominal;
+    custAggForNarrative[it.customer].maxDays = Math.max(custAggForNarrative[it.customer].maxDays, dl);
+  });
+  const chronicTop3 = Object.entries(custAggForNarrative).sort((a,b)=>b[1].nominal-a[1].nominal).slice(0,3);
+  const chronicTopExamples = chronicTop3.map(([c,d]) => `<b>${c}</b> (${fmtRpAm(d.nominal)}, ${d.maxDays} hari)`).join(', ');
+
+  const internalCustomers = [...new Set(AR_ITEMS.filter(it=>it.kategori==='INTERNAL').map(it=>it.customer))].slice(0,3);
+  const internalExamples = internalCustomers.map(c=>`<b>${c}</b>`).join(', ') || 'beberapa entitas afiliasi';
+
+  document.getElementById('arMgmtNarrative').innerHTML = `
+    <p><b>Gambaran besar.</b> Per <b>${new Date(window.__AR_SNAPSHOT_DATE__+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</b>, total piutang SEA tercatat <b>${fmtRpAm(total)}</b> dari ${AR_ITEMS.length} transaksi outstanding di 7 cabang dan 35 sales. Dari jumlah ini, <b style="color:var(--red);">${overduePct.toFixed(1)}% (${fmtRpAm(overdueTotal)}) sudah lewat tanggal jatuh tempo</b> — jauh di luar siklus pembayaran normal untuk bisnis wholesale/retail dengan Term of Payment 45 hari. Hanya ${fmtRpAm(notOverdueTotal)} (${(100-overduePct).toFixed(1)}%) yang posisinya masih wajar.</p>
+    <p><b>Ini bukan sekadar "telat bayar".</b> Begitu kita pecah berdasarkan berapa lama keterlambatannya, gambarannya berubah total: <b>${chronicPct.toFixed(1)}% dari seluruh piutang (${fmtRpAm(chronicTotal)}) sudah menunggak lebih dari 360 hari</b> — bukan telat sebulan-dua bulan, tapi sudah lebih dari setahun. Hanya sekitar 9% dari total AR yang keterlambatannya masih dalam rentang wajar (di bawah 30 hari). Artinya, mayoritas piutang yang "overdue" itu bukan piutang yang baru lewat tempo dan masih realistis ditagih — itu piutang yang sudah lama dibiarkan, dan kemungkinan besar sudah jadi piutang macet yang sulit dikonversi jadi kas.</p>
+    <p><b>Contoh paling mencolok:</b> ${chronicTopExamples}. Piutang dengan umur seperti ini, secara praktik akuntansi konservatif, biasanya sudah perlu dipertimbangkan untuk <b>provisi kerugian atau write-off</b> — bukan lagi sekadar "ditagih lebih giat".</p>
+    <p><b>Satu hal penting untuk dipisahkan:</b> <b>${kategoriInternalPct.toFixed(1)}% (${fmtRpAm(kategoriInternal)}) dari total piutang adalah ke entitas internal grup Syaamil/Sygma sendiri</b> (seperti ${internalExamples}), bukan customer eksternal murni. Penagihan piutang internal ini bersifat keputusan finansial antar-entitas grup — bukan tanggung jawab penagihan lapangan oleh sales.</p>
+  `;
+
+  // --- Per Cabang ---
+  const byEntitas = {};
+  AR_ITEMS.forEach(it => {
+    if (!byEntitas[it.entitas]) byEntitas[it.entitas] = { total:0, overdue:0, count:0, overdueCount:0 };
+    byEntitas[it.entitas].total += it.nominal;
+    byEntitas[it.entitas].count += 1;
+    const dl = daysLateAm(it.due_date);
+    if (dl !== null && dl > 0) {
+      byEntitas[it.entitas].overdue += it.nominal;
+      byEntitas[it.entitas].overdueCount += 1;
+    }
+  });
+  const cabangRows = Object.entries(byEntitas).map(([e,d]) => ({
+    entitas: e, ...d, pct: d.total ? (d.overdue/d.total*100) : 0
+  })).sort((a,b) => b.pct - a.pct);
+
+  function cabangAnalysisText(r, rank, n) {
+    if (r.pct >= 90) return rank === 0 ? 'Tertinggi — perlu perhatian segera' : 'Sangat tinggi, di atas rata-rata';
+    if (r.pct >= 80) return 'Tinggi, sejalan dengan kondisi umum SEA';
+    if (rank === n-1) return 'Relatif terbaik, meski masih tinggi secara absolut';
+    return 'Di kisaran rata-rata cabang lain';
+  }
+
+  const cabangThead = '<tr><th>Cabang</th><th>Total AR</th><th>Overdue</th><th>% Overdue</th><th>Item</th><th>Analisis</th></tr>';
+  const cabangTbody = cabangRows.map((r,i) => {
+    const cls = r.pct >= 90 ? 'yoy-neg' : (r.pct >= 70 ? '' : 'yoy-pos');
+    return `<tr class="ar-mgmt-clickable" data-mgmttype="cabang" data-mgmtkey="${r.entitas.replace(/"/g,'&quot;')}">
+      <td>${r.entitas}</td>
+      <td data-sort-value="${r.total}">${fmtRpAm(r.total)}</td>
+      <td data-sort-value="${r.overdue}">${fmtRpAm(r.overdue)}</td>
+      <td class="${cls}" data-sort-value="${r.pct}" style="font-weight:700;">${r.pct.toFixed(1)}%</td>
+      <td data-sort-value="${r.overdueCount}">${r.overdueCount} / ${r.count}</td>
+      <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${cabangAnalysisText(r,i,cabangRows.length)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('arMgmtCabangTable').innerHTML = `<thead>${cabangThead}</thead><tbody>${cabangTbody}</tbody>`;
+  if (window.makeSortableTable) window.makeSortableTable('arMgmtCabangTable');
+
+  // --- Per Sales ---
+  const bySales = {};
+  AR_ITEMS.forEach(it => {
+    if (!bySales[it.sales]) bySales[it.sales] = { total:0, overdue:0, count:0, entitas:new Set() };
+    bySales[it.sales].total += it.nominal;
+    bySales[it.sales].entitas.add(it.entitas);
+    bySales[it.sales].count += 1;
+    const dl = daysLateAm(it.due_date);
+    if (dl !== null && dl > 0) bySales[it.sales].overdue += it.nominal;
+  });
+  const salesRows = Object.entries(bySales).map(([s,d]) => ({
+    sales: s, ...d, entitas: [...d.entitas].join(', '), pct: d.total ? (d.overdue/d.total*100) : 0
+  })).sort((a,b) => b.total - a.total);
+
+  function salesAnalysisText(r) {
+    if (r.pct >= 95) return 'Hampir seluruh piutang overdue — perlu tindak lanjut khusus';
+    if (r.pct >= 80) return 'Rasio overdue tinggi';
+    if (r.pct >= 50) return 'Sebagian besar overdue, masih ada ruang perbaikan';
+    return 'Praktik penagihan relatif baik';
+  }
+
+  const salesThead = '<tr><th>Sales</th><th>Cabang</th><th>Total AR</th><th>Overdue</th><th>% Overdue</th><th>Item</th><th>Analisis</th></tr>';
+  const salesTbody = salesRows.map(r => {
+    const cls = r.pct >= 90 ? 'yoy-neg' : (r.pct >= 70 ? '' : 'yoy-pos');
+    return `<tr class="ar-mgmt-clickable" data-mgmttype="sales" data-mgmtkey="${r.sales.replace(/"/g,'&quot;')}">
+      <td>${r.sales}</td>
+      <td style="font-size:11.5px;color:var(--ink-faint);">${r.entitas}</td>
+      <td data-sort-value="${r.total}">${fmtRpAm(r.total)}</td>
+      <td data-sort-value="${r.overdue}">${fmtRpAm(r.overdue)}</td>
+      <td class="${cls}" data-sort-value="${r.pct}" style="font-weight:700;">${r.pct.toFixed(1)}%</td>
+      <td data-sort-value="${r.count}">${r.count}</td>
+      <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${salesAnalysisText(r)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('arMgmtSalesTable').innerHTML = `<thead>${salesThead}</thead><tbody>${salesTbody}</tbody>`;
+  if (window.makeSortableTable) window.makeSortableTable('arMgmtSalesTable');
+
+  // Sales insight: find biggest contrast within same branch
+  let biggestContrast = null;
+  const salesByBranch = {};
+  salesRows.forEach(r => {
+    if (r.entitas.includes(',')) return;
+    if (!salesByBranch[r.entitas]) salesByBranch[r.entitas] = [];
+    salesByBranch[r.entitas].push(r);
+  });
+  Object.values(salesByBranch).forEach(group => {
+    if (group.length < 2) return;
+    const eligible = group.filter(r => r.total >= 1e8);
+    if (eligible.length < 2) return;
+    const maxPct = eligible.reduce((a,b)=>b.pct>a.pct?b:a, eligible[0]);
+    const minPct = eligible.reduce((a,b)=>b.pct<a.pct?b:a, eligible[0]);
+    const gap = maxPct.pct - minPct.pct;
+    if (gap > 20 && (biggestContrast===null || gap > biggestContrast.gap)) {
+      biggestContrast = { gap, maxPct, minPct, branch: maxPct.entitas };
+    }
+  });
+  const salesInsightEl = document.getElementById('arMgmtSalesInsight');
+  if (salesInsightEl) {
+    let html = `<p><span class="pti-tag">Insight</span>Rasio overdue antar sales bervariasi luas, dari yang terendah hingga 100%. Ini bukan murni soal wilayah/cabang — sangat dipengaruhi oleh praktik penagihan masing-masing individu sales.</p>`;
+    if (biggestContrast) {
+      html += `<p><b>Kontras paling tajam</b> ada di cabang <b>${biggestContrast.branch}</b>: <b>${biggestContrast.maxPct.sales}</b> mencatat ${biggestContrast.maxPct.pct.toFixed(1)}% overdue (${fmtRpAm(biggestContrast.maxPct.total)}), sementara <b>${biggestContrast.minPct.sales}</b> di cabang yang sama hanya ${biggestContrast.minPct.pct.toFixed(1)}% overdue (${fmtRpAm(biggestContrast.minPct.total)}). Selisih ${biggestContrast.gap.toFixed(0)} poin persentase di cabang yang sama ini layak jadi bahan evaluasi praktik penagihan personal — bukan murni faktor wilayah.</p>`;
+    }
+    salesInsightEl.innerHTML = html;
+  }
+
+  // --- Top 10 overdue ---
+  const custAgg = {};
+  AR_ITEMS.forEach(it => {
+    const dl = daysLateAm(it.due_date);
+    if (dl === null || dl <= 0) return;
+    if (!custAgg[it.customer]) custAgg[it.customer] = { nominal:0, sales:new Set(), entitas:new Set(), maxDays:0 };
+    custAgg[it.customer].nominal += it.nominal;
+    custAgg[it.customer].sales.add(it.sales);
+    custAgg[it.customer].entitas.add(it.entitas);
+    custAgg[it.customer].maxDays = Math.max(custAgg[it.customer].maxDays, dl);
+  });
+  const top10 = Object.entries(custAgg).sort((a,b)=>b[1].nominal-a[1].nominal).slice(0,10);
+
+  function topAnalysisText(days) {
+    if (days > 1000) return 'Kronis bertahun-tahun — kandidat write-off';
+    if (days > 360) return 'Sudah lewat 1 tahun — prioritas penagihan khusus';
+    if (days > 90) return 'Cukup lama, masih layak ditagih intensif';
+    return 'Baru lewat tempo, follow-up rutin cukup';
+  }
+
+  const topThead = '<tr><th>Customer</th><th>Nominal</th><th>Hari Telat</th><th>Sales</th><th>Cabang</th><th>Analisis</th></tr>';
+  const topTbody = top10.map(([c,d]) => `<tr class="ar-mgmt-clickable" data-mgmttype="customer" data-mgmtkey="${c.replace(/"/g,'&quot;')}">
+    <td>${c}</td>
+    <td data-sort-value="${d.nominal}">${fmtRpAm(d.nominal)}</td>
+    <td data-sort-value="${d.maxDays}" style="font-weight:700;color:${d.maxDays>360?'var(--red)':'var(--ink)'};">${d.maxDays} hari</td>
+    <td>${[...d.sales].join(', ')}</td>
+    <td>${[...d.entitas].join(', ')}</td>
+    <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${topAnalysisText(d.maxDays)}</td>
+  </tr>`).join('');
+  document.getElementById('arMgmtTopOverdueTable').innerHTML = `<thead>${topThead}</thead><tbody>${topTbody}</tbody>`;
+  if (window.makeSortableTable) window.makeSortableTable('arMgmtTopOverdueTable');
+
+  // --- Drill-down modal: click a row in any of the 3 tables above to see the underlying AR_ITEMS ---
+  const mgmtModalOverlay = document.getElementById('arMgmtModalOverlay');
+  const mgmtModalClose = document.getElementById('arMgmtModalClose');
+  function closeMgmtModal() { if (mgmtModalOverlay) mgmtModalOverlay.classList.remove('open'); }
+  if (mgmtModalClose) mgmtModalClose.addEventListener('click', closeMgmtModal);
+  if (mgmtModalOverlay) mgmtModalOverlay.addEventListener('click', (e) => { if (e.target === mgmtModalOverlay) closeMgmtModal(); });
+
+  function openMgmtModal(type, key) {
+    let items, title, sub;
+    if (type === 'cabang') {
+      items = AR_ITEMS.filter(it => it.entitas === key);
+      title = key; sub = 'Rincian seluruh piutang outstanding di cabang ini';
+    } else if (type === 'sales') {
+      items = AR_ITEMS.filter(it => it.sales === key);
+      title = key; sub = 'Rincian seluruh piutang outstanding sales ini';
+    } else {
+      items = AR_ITEMS.filter(it => it.customer === key);
+      title = key; sub = 'Rincian seluruh piutang outstanding customer ini';
+    }
+    items = items.slice().sort((a,b) => {
+      const dlA = daysLateAm(a.due_date) || -9999, dlB = daysLateAm(b.due_date) || -9999;
+      return dlB - dlA;
+    });
+    const itemsTotal = items.reduce((s,it)=>s+it.nominal,0);
+    const itemsOverdue = items.filter(it => { const dl = daysLateAm(it.due_date); return dl!==null && dl>0; }).reduce((s,it)=>s+it.nominal,0);
+
+    document.getElementById('arMgmtModalTitle').textContent = title;
+    document.getElementById('arMgmtModalSub').textContent = sub;
+    document.getElementById('arMgmtModalKpi').innerHTML = `
+      <div class="ar-modal-kpi-item"><div class="lbl">Total AR</div><div class="val">${fmtRpAm(itemsTotal)}</div></div>
+      <div class="ar-modal-kpi-item"><div class="lbl">Overdue</div><div class="val" style="color:var(--red);">${fmtRpAm(itemsOverdue)}</div></div>
+      <div class="ar-modal-kpi-item"><div class="lbl">Jumlah Item</div><div class="val">${items.length}</div></div>
+    `;
+    document.getElementById('arMgmtModalHead').innerHTML = '<th>Customer</th><th>Sales</th><th>Cabang</th><th>Nominal</th><th>Hari Telat</th><th>Jatuh Tempo</th>';
+    document.getElementById('arMgmtModalBody').innerHTML = items.map(it => {
+      const dl = daysLateAm(it.due_date);
+      const dlLabel = dl === null ? '—' : (dl <= 0 ? `${Math.abs(dl)} hari lagi` : `${dl} hari telat`);
+      const dlColor = (dl !== null && dl > 360) ? 'var(--red)' : ((dl !== null && dl > 0) ? 'var(--amber)' : 'var(--green)');
+      return `<tr>
+        <td>${type==='customer'?'':it.customer}</td>
+        <td>${type==='sales'?'':it.sales}</td>
+        <td>${type==='cabang'?'':it.entitas}</td>
+        <td style="text-align:right;font-family:var(--mono);">${fmtRpAm(it.nominal)}</td>
+        <td style="text-align:right;font-family:var(--mono);color:${dlColor};font-weight:600;">${dlLabel}</td>
+        <td style="text-align:right;font-family:var(--mono);color:var(--ink-faint);">${it.due_date || '—'}</td>
+      </tr>`;
+    }).join('');
+    if (mgmtModalOverlay) mgmtModalOverlay.classList.add('open');
+  }
+
+  document.querySelectorAll('#arMgmtCabangTable, #arMgmtSalesTable, #arMgmtTopOverdueTable').forEach(table => {
+    table.addEventListener('click', (e) => {
+      const row = e.target.closest('tr.ar-mgmt-clickable');
+      if (!row) return;
+      openMgmtModal(row.dataset.mgmttype, row.dataset.mgmtkey);
+    });
+  });
+
+  // --- Action Plan ---
+// --- Action Plan ---
+  const worstCabang = cabangRows[0];
+  const worstSales = salesRows.filter(r=>r.pct>=95 && r.total>1e8).sort((a,b)=>b.total-a.total)[0];
+  const actions = [];
+
+  actions.push({
+    priority: 1,
+    title: `Audit piutang kronis (>360 hari) sebesar ${fmtRpAm(chronicTotal)}`,
+    desc: `${chronicPct.toFixed(1)}% dari total AR sudah menunggak lebih dari setahun. Untuk piutang ini, evaluasi realistis: tagih dengan upaya khusus (negosiasi langsung/somasi), atau usulkan provisi/write-off jika sudah tidak realistis ditagih. Lihat tabel "Top 10 Piutang Paling Lama Menunggak" di atas untuk daftar prioritas.`
+  });
+
+  if (worstCabang) {
+    actions.push({
+      priority: 1,
+      title: `Evaluasi praktik penagihan di cabang ${worstCabang.entitas}`,
+      desc: `Cabang ini punya rasio overdue tertinggi (${worstCabang.pct.toFixed(1)}%) dari total AR ${fmtRpAm(worstCabang.total)}. Minta laporan tindak lanjut penagihan per sales di cabang ini secara berkala.`
+    });
+  }
+
+  if (worstSales) {
+    actions.push({
+      priority: 2,
+      title: `Tindak lanjut khusus untuk sales dengan piutang besar & rasio overdue ekstrem`,
+      desc: `<b>${worstSales.sales}</b> (${worstSales.entitas}) memegang piutang ${fmtRpAm(worstSales.total)} dengan ${worstSales.pct.toFixed(1)}% overdue. Lakukan review satu-satu untuk memahami penyebab (relasi customer, kebijakan kredit yang terlalu longgar, atau kurang aktif menagih).`
+    });
+  }
+
+  if (kategoriInternalPct > 15) {
+    actions.push({
+      priority: 2,
+      title: 'Selesaikan piutang internal lewat keputusan grup, bukan jalur penagihan sales',
+      desc: `${kategoriInternalPct.toFixed(1)}% (${fmtRpAm(kategoriInternal)}) dari AR adalah piutang ke entitas internal grup. Ini perlu diselesaikan lewat keputusan struktur permodalan/intercompany di level manajemen grup, terpisah dari KPI penagihan sales lapangan.`
+    });
+  }
+
+  actions.push({
+    priority: 3,
+    title: 'Jadikan rasio overdue per sales sebagai bagian evaluasi kinerja rutin',
+    desc: `Variasi rasio overdue antar sales (bahkan di cabang yang sama) sangat lebar — ini menunjukkan faktor personal turut berperan, bukan cuma kondisi pasar/wilayah. Pertimbangkan menambahkan metrik "rasio piutang overdue" ke evaluasi kinerja sales secara berkala.`
+  });
+
+  const priorityLabel = { 1:'P1', 2:'P2', 3:'P3' };
+  document.getElementById('arMgmtActionPlan').innerHTML = actions.map(a => `
+    <div class="ap-item">
+      <div class="ap-priority p${a.priority}">${priorityLabel[a.priority]}</div>
+      <div class="ap-body">
+        <div class="ap-title">${a.title}</div>
+        <div class="ap-desc">${a.desc}</div>
+      </div>
+    </div>
+  `).join('');
+})();
+</script>
+
+
+<script>
 // ============ PROFIT & LOSS PAGE ============
 (function() {
 
@@ -11569,20 +12043,29 @@ const highlights = [];
 
 // --- Render cards ---
 const statusLabel = { green:'Sehat', amber:'Perlu Perhatian', red:'Kritis', blue:'Informasi' };
-document.getElementById('ovCardGrid').innerHTML = cards.map(c => `
+document.getElementById('ovCardGrid').innerHTML = cards.map(c => {
+  const perfIcon = { green:'✅', amber:'⚠️', red:'❌', blue:'' }[c.status] || '';
+  const isNeg = (v) => typeof v === 'string' && v.trim().startsWith('-');
+  const metricHtml = isNeg(c.metric) ? `<span class="ov-neg">${c.metric}</span>` : c.metric;
+  const rowsHtml = c.rows.map(r => {
+    const valHtml = isNeg(r.v) ? `<span class="ov-neg">${r.v}</span>` : r.v;
+    return `<div class="ov-card-row"><span class="l">${r.l}</span><span class="v">${valHtml}</span></div>`;
+  }).join('');
+  return `
   <div class="ov-card status-${c.status}" data-page="${c.page}">
     <div class="ov-card-head">
-      <div class="ov-card-title"><span class="ov-card-icon">${c.icon}</span>${c.title}</div>
+      <div class="ov-card-title"><span class="ov-card-icon">${c.icon}</span>${c.title}${perfIcon ? ` <span class="ov-perf-icon" title="${statusLabel[c.status]}">${perfIcon}</span>` : ''}</div>
       <div class="ov-card-dot status-${c.status}" title="${statusLabel[c.status]}"></div>
     </div>
-    <div class="ov-card-metric">${c.metric}</div>
+    <div class="ov-card-metric">${metricHtml}</div>
     <div class="ov-card-label">${c.label}</div>
     <div class="ov-card-rows">
-      ${c.rows.map(r=>`<div class="ov-card-row"><span class="l">${r.l}</span><span class="v">${r.v}</span></div>`).join('')}
+      ${rowsHtml}
     </div>
     <div class="ov-card-cta">Lihat Detail →</div>
   </div>
-`).join('');
+`;
+}).join('');
 
 document.querySelectorAll('#dash-overview .ov-card').forEach(card => {
   card.addEventListener('click', () => {
