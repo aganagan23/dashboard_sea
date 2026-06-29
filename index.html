@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 10:30 WIB | Ganti card Collection Rate (bias basis 2025) jadi DSO Tahun Ini (2026, annualized); tabel Collection Rate pakai Penjualan Netto, bukan Bruto -->
+<!-- BUILD: 2026-06-28 11:30 WIB | Tambah link sumber benchmark (klik) + section baru Konteks Industri Penerbitan Buku & Al-Quran (konsinyasi, margin tipis, Atradius) -->
 
 <html lang="id">
 <head>
@@ -2967,6 +2967,35 @@
         <table id="arMgmtCollectionTable" style="width:100%;border-collapse:collapse;"></table>
       </div>
       <div class="pnl-table-insight" id="arMgmtCollectionInsight" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Benchmark Industri Wholesale &amp; Retail</h2>
+      <span class="note">data eksternal sebagai pembanding kondisi AR SEA</span>
+    </div>
+    <div class="panel" id="arMgmtBenchmarkPanel" style="line-height:1.8; font-size:14.5px;"></div>
+    <div style="margin-top:10px; font-size:11px; color:var(--ink-faint); font-family:var(--mono);">
+      Sumber: <a href="https://www.smbcompass.com/average-dso-by-industry/" target="_blank" rel="noopener" style="color:var(--gold);">SMBcompass &mdash; Average DSO by Industry (mengacu The Hackett Group 2025 Working Capital Survey)</a>,
+      <a href="https://dealhub.io/glossary/days-sales-outstanding/" target="_blank" rel="noopener" style="color:var(--gold);">DealHub</a>,
+      <a href="https://resolvepay.com/blog/statistics-on-ar-aging-90-days-write-off-correlations" target="_blank" rel="noopener" style="color:var(--gold);">Resolve &mdash; AR Aging Past 90 Days Statistics</a>,
+      <a href="https://resolvepay.com/blog/post/when-to-write-off-bad-debt/" target="_blank" rel="noopener" style="color:var(--gold);">Resolve &mdash; When to Write-off Bad Debt</a>,
+      <a href="https://www.salesforce.com/sales/revenue-lifecycle-management/days-sales-outstanding-dso/" target="_blank" rel="noopener" style="color:var(--gold);">Salesforce</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Konteks Industri Penerbitan Buku &amp; Al-Qur'an</h2>
+      <span class="note">karakteristik unik bisnis distribusi buku/Al-Qur'an dibanding wholesale generik</span>
+    </div>
+    <div class="panel" id="arMgmtBookIndustryPanel" style="line-height:1.8; font-size:14.5px;"></div>
+    <div style="margin-top:10px; font-size:11px; color:var(--ink-faint); font-family:var(--mono);">
+      Sumber: <a href="https://bandungbergerak.id/article/detail/1197/memorabilia-buku-6-menjadi-reseller-penerbit-mizan-ijazah-jadi-jaminan" target="_blank" rel="noopener" style="color:var(--gold);">BandungBergerak.id &mdash; pengalaman reseller penerbit Mizan</a>,
+      <a href="https://ingeniumbooks.com/book-retailer-returns/" target="_blank" rel="noopener" style="color:var(--gold);">Ingenium Books &mdash; Book Retailer Returns</a>,
+      <a href="https://www.ikapi.org/2023/05/29/masa-depan-toko-buku-penerbit-dan-penulis/" target="_blank" rel="noopener" style="color:var(--gold);">IKAPI (Ikatan Penerbit Indonesia)</a>,
+      <a href="https://www.paper.id/blog/keuangan-bisnis/tips-mengatur-tempo-pembayaran-supplier-untuk-memperlancar-cash-flow/" target="_blank" rel="noopener" style="color:var(--gold);">Paper.id &mdash; mengutip studi Atradius Payment Practices Barometer</a>
     </div>
   </div>
 
@@ -11868,9 +11897,78 @@ const curY = TODAY_YEAR;
     }
   }
 
+  function renderBenchmarkPanel(kategoriFilter, AR_ITEMS) {
+    const panelEl = document.getElementById('arMgmtBenchmarkPanel');
+    if (!panelEl) return;
+
+    const arTotal = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+    const ar90Plus = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 90).reduce((s,it)=>s+it.nominal, 0);
+    const ar90PlusPct = arTotal ? (ar90Plus/arTotal*100) : 0;
+    const arChronicLocal = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
+    const arChronicPctLocal = arTotal ? (arChronicLocal/arTotal*100) : 0;
+
+    const curY2 = TODAY_YEAR;
+    let nettoYtd2026b = 0, daysYtd2026b = 0;
+    for (let m = 1; m <= 12; m++) {
+      if (pnlIsFutureMonth(curY2, m)) continue;
+      const row = PNL_DATA.data && PNL_DATA.data[curY2+'-'+m];
+      if (!row) continue;
+      nettoYtd2026b += row['Pendapatan Netto']||0;
+      daysYtd2026b += new Date(curY2, m, 0).getDate();
+    }
+    const nettoAnnualized2026b = daysYtd2026b ? (nettoYtd2026b/daysYtd2026b*365) : null;
+    const dsoLocal = nettoAnnualized2026b ? (arTotal/nettoAnnualized2026b*365) : null;
+
+    // Industry benchmark figures, sourced externally (see section note for citations):
+    // - Wholesale/distribution DSO: 30-45 days (Hackett Group 2025 / SMBcompass / DealHub)
+    // - General rule of thumb: DSO exceeding 50% above agreed terms signals a collection problem
+    // - AR > 90 days should stay below 15-20% of total receivables; above 30% signals serious issues
+    // - Receivables aged > 90 days see collection rates drop to ~50%; beyond 12 months, only ~10% are still recoverable
+    // - Common bad-debt write-off threshold: 90-180 days past due (some policies extend to 365 days)
+    // - U.S. Cash Conversion Cycle average (Hackett Group 2025): 37 days
+    const BENCH_DSO_LOW = 30, BENCH_DSO_HIGH = 45;
+    const dsoVsBenchmark = dsoLocal !== null ? (dsoLocal / BENCH_DSO_HIGH) : null;
+
+    panelEl.innerHTML = `
+      <p>Beberapa angka berikut adalah <b>benchmark eksternal industri wholesale &amp; distribusi</b> (bukan data SEA), dikutip dari survei dan publikasi praktik keuangan korporat, untuk memberi konteks apakah kondisi piutang SEA di atas wajar atau di luar kebiasaan industri sejenis.</p>
+      <ul style="margin:10px 0 14px 22px; padding:0;">
+        <li style="margin-bottom:6px;"><b>DSO wholesale/distribusi pada umumnya 30&ndash;45 hari</b>, dengan target ideal di bawah 30 hari &mdash; karena tagihan biasanya terikat pengiriman barang dengan bukti pengiriman yang jelas, sehingga jendela perselisihan/dispute relatif sempit dibanding industri lain seperti manufaktur atau konstruksi.</li>
+        <li style="margin-bottom:6px;">Aturan umum yang dipakai banyak praktisi kredit: <b>jika DSO aktual melebihi 50% dari Term of Payment yang disepakati, itu sinyal ada masalah penagihan</b> &mdash; bukan lagi variasi normal.</li>
+        <li style="margin-bottom:6px;">Piutang yang sudah lewat <b>90 hari sebaiknya tetap di bawah 15&ndash;20% dari total piutang</b> untuk arus kas yang sehat; begitu melewati 30%, itu menandakan masalah serius pada proses penagihan atau kualitas kredit customer.</li>
+        <li style="margin-bottom:6px;">Secara statistik, piutang yang sudah lewat 90 hari punya tingkat keterhasilan tertagih turun ke sekitar <b>50%</b>; begitu melewati 12 bulan, <b>hanya sekitar 10% yang masih realistis tertagih</b>.</li>
+        <li>Kebijakan write-off umum di banyak perusahaan menetapkan ambang <b>90&ndash;180 hari lewat jatuh tempo</b> sebagai titik evaluasi penghapusan piutang macet (sebagian perusahaan memperpanjang sampai 365 hari sebelum mengevaluasi write-off).</li>
+      </ul>
+      <p><b>Korelasi dengan kondisi SEA saat ini:</b> DSO SEA tahun ini tercatat <b>${dsoLocal!==null?dsoLocal.toFixed(0):'—'} hari</b> &mdash; ${dsoLocal!==null && dsoVsBenchmark!==null ? `${dsoVsBenchmark.toFixed(1)}x dari batas atas benchmark wholesale (${BENCH_DSO_HIGH} hari), dan jauh di luar rentang wajar industri (${BENCH_DSO_LOW}&ndash;${BENCH_DSO_HIGH} hari)` : 'tidak dapat dibandingkan'}. Piutang yang sudah lewat 90 hari mencapai <b style="color:${ar90PlusPct>30?'var(--red)':(ar90PlusPct>20?'var(--amber)':'var(--ink)')};">${ar90PlusPct.toFixed(1)}%</b> dari total AR &mdash; ${ar90PlusPct>30?'jauh melampaui ambang 30% yang dianggap "masalah serius" pada benchmark industri':(ar90PlusPct>20?'sudah di atas ambang aman 15-20%':'masih dalam rentang yang dianggap sehat')}.</p>
+      <p>Dengan mengacu pada statistik keterhasilan tertagih industri (piutang &gt;90 hari hanya ${'~50%'} yang tertagih, dan piutang &gt;12 bulan hanya ${'~10%'}), maka dari <b>${fmtRpCorr(arChronicLocal)}</b> piutang SEA yang sudah kronis (&gt;360 hari, ${arChronicPctLocal.toFixed(1)}% dari total AR), <b>estimasi realistis yang masih bisa tertagih hanya sekitar ${fmtRpCorr(arChronicLocal*0.10)}</b> &mdash; sisanya (${fmtRpCorr(arChronicLocal*0.90)}) sejalan dengan kebijakan write-off industri yang umumnya mengevaluasi piutang di atas 90&ndash;180 hari, sudah lewat ambang waktu manapun yang biasa dipakai untuk keputusan provisi atau penghapusan.</p>
+    `;
+  }
+
+  function renderBookIndustryPanel(kategoriFilter, AR_ITEMS) {
+    const panelEl = document.getElementById('arMgmtBookIndustryPanel');
+    if (!panelEl) return;
+
+    const arTotal = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+    const kategoriInternalLocal = AR_ITEMS_ALL_CORR.filter(it=>it.kategori==='INTERNAL').reduce((s,it)=>s+it.nominal,0);
+    const kategoriInternalPctLocal = AR_ITEMS_ALL_CORR.length ? (kategoriInternalLocal/AR_ITEMS_ALL_CORR.reduce((s,it)=>s+it.nominal,0)*100) : 0;
+    const arChronicForBook = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
+
+    panelEl.innerHTML = `
+      <p>Bisnis distribusi buku &mdash; termasuk buku Al-Qur'an dan literatur keagamaan &mdash; punya karakteristik yang <b>berbeda dari wholesale generik</b> dan layak dipahami sebelum membandingkan DSO SEA langsung dengan benchmark di atas:</p>
+      <ul style="margin:10px 0 14px 22px; padding:0;">
+        <li style="margin-bottom:6px;">Industri perbukuan (termasuk di Indonesia) banyak beroperasi dengan <b>model konsinyasi/titip jual</b>, bukan jual-putus &mdash; toko/reseller baru membayar penerbit setelah buku benar-benar terjual ke konsumen akhir (bukan saat buku diterima). Ini secara struktural <b>memperpanjang siklus kas</b> dibanding wholesale barang fisik biasa yang langsung tercatat sebagai penjualan saat pengiriman.</li>
+        <li style="margin-bottom:6px;">Margin distribusi buku relatif tipis (laporan praktisi reseller penerbit sekelas Mizan mencatat margin rata-rata sekitar <b>15%</b>), sehingga <b>godaan memakai dulu uang setoran penjualan</b> sebelum disetorkan balik ke penerbit adalah risiko yang sudah dikenal luas di industri ini &mdash; persis pola yang kita lihat pada analisis Net Cash Flow SEA sebelumnya (piutang/kas "dimakan" untuk menutup defisit operasional).</li>
+        <li style="margin-bottom:6px;">Studi Atradius Payment Practices Barometer mencatat <b>rata-rata bisnis B2B membayar 73 hari lewat jatuh tempo yang disepakati</b> &mdash; 50% lebih lama dari waktu normal yang seharusnya. Ini konteks regional/B2B umum, bukan spesifik perbukuan, tapi menunjukkan keterlambatan pembayaran B2B bukan kasus langka.</li>
+        <li>Di pasar buku retail global (model Ingram/Barnes&amp;Noble), retur buku yang tidak terjual adalah praktik standar dengan jendela waktu <b>60&ndash;180 hari</b> sebelum dianggap final &mdash; mirip konsepnya dengan ambang write-off piutang yang kita bahas di atas, hanya saja bentuknya retur barang, bukan piutang kas.</li>
+      </ul>
+      <p><b>Korelasi dengan SEA:</b> ${kategoriInternalPctLocal.toFixed(1)}% dari total piutang SEA adalah <b>piutang ke entitas internal grup Syaamil/Sygma sendiri</b> &mdash; ini sejalan dengan pola umum bisnis penerbitan/distribusi buku keagamaan yang sering terstruktur dengan banyak entitas berafiliasi (penerbit, percetakan, distributor wilayah) dalam satu grup, sehingga sebagian "piutang dagang" sebenarnya adalah saldo permodalan antar-entitas, bukan transaksi dengan pihak ketiga independen. Dari piutang kronis (&gt;360 hari) yang tersisa di luar internal, kondisi ini konsisten dengan pengamatan praktisi reseller buku keagamaan: begitu arus kas dari penjualan tidak disetorkan tepat waktu karena terpakai untuk operasional, <b>utang konsinyasi menumpuk dan sulit terurai</b> &mdash; pola yang sama persis terlihat pada Severity Keterlambatan dan Net Cash Flow negatif SEA yang sudah dibahas di atas.</p>
+    `;
+  }
+
   function renderCorrelationSection(kategoriFilter, AR_ITEMS) {
     renderKpiAndFindings(kategoriFilter, AR_ITEMS);
     renderCollectionTable(kategoriFilter, AR_ITEMS);
+    renderBenchmarkPanel(kategoriFilter, AR_ITEMS);
+    renderBookIndustryPanel(kategoriFilter, AR_ITEMS);
   }
 
   window.__renderArMgmtCorrelation = renderCorrelationSection;
