@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 04:30 WIB | Replace 9/12 dataset (Omzet/Budget/Saldo/CashProj/Schedule/CashFlow/AR/SalesOrder/PNL) - AP & Inventory dilewati, tetap data 27 Jun -->
+<!-- BUILD: 2026-06-28 04:45 WIB | Sidebar Update Data: tambah baris 'Laba Rugi' (s.d bulan aktual terakhir) + perbesar font dari 10px ke 12px -->
 
 <html lang="id">
 <head>
@@ -1554,7 +1554,7 @@
       <button class="shell-nav-btn" data-page="dash-ap"><span class="ic"></span>AP / Hutang SEA</button>
       <button class="shell-nav-btn" data-page="dash-inventory"><span class="ic"></span>Inventory SEA</button>
     </div>
-    <div class="shell-data-info" style="padding:12px 14px;border-top:1px solid var(--shell-line);font-family:var(--shell-mono);font-size:10px;color:var(--shell-ink-dim,#A0927E);line-height:1.9;">
+    <div class="shell-data-info" style="padding:12px 14px;border-top:1px solid var(--shell-line);font-family:var(--shell-mono);font-size:10px;color:var(--shell-ink-dim,#A0927E);line-height:1.9;font-size:12px;">
       <div style="font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;color:var(--shell-ink,#F0E6D8);">Update Data</div>
       <div>Omzet &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="shellInfoOmzet">-</span></div>
       <div>Saldo &nbsp;<span id="shellInfoSaldo">-</span></div>
@@ -1562,6 +1562,7 @@
       <div>Schedule &nbsp;<span id="shellInfoSchedule">-</span></div>
       <div>AR &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="shellInfoAr">-</span></div>
       <div>AP &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="shellInfoAp">-</span></div>
+      <div>Laba Rugi &nbsp;<span id="shellInfoPnl">-</span></div>
     </div>
     <div class="shell-foot">Syaamil Group<br>Financial Planning &amp; Analysis</div>
   </div>
@@ -11352,6 +11353,22 @@ document.getElementById('ovAsOfDate').textContent = new Date().toLocaleDateStrin
   if (SCHED) setShellInfo('shellInfoSchedule', SCHED.last_actual_date);
   setShellInfo('shellInfoAr', window.__AR_SNAPSHOT_DATE__);
   setShellInfo('shellInfoAp', window.__AP_SNAPSHOT_DATE__);
+  const PNL = window.__PNL_DATA__;
+  if (PNL) {
+    const PNL_MONTH_NAMES_SHELL = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const today = new Date();
+    const curY = today.getFullYear(), curM = today.getMonth()+1;
+    function isFutureM(y, m) { return (y > curY) || (y === curY && m >= curM); }
+    let lastY = null, lastM = null;
+    (PNL.years||[]).forEach(y => {
+      for (let m = 1; m <= 12; m++) {
+        if (isFutureM(y, m)) continue;
+        if (PNL.data[y+'-'+m]) { lastY = y; lastM = m; }
+      }
+    });
+    const pnlEl = document.getElementById('shellInfoPnl');
+    if (pnlEl) pnlEl.textContent = lastY ? `s.d ${PNL_MONTH_NAMES_SHELL[lastM-1]} ${lastY}` : '-';
+  }
 })();
 
 function ovFmtRp(n) {
