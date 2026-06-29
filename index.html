@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 08:30 WIB | Hapus menu Balance Sheet dari UI; tambah Collection Rate + 3 Temuan Kritis (korelasi AR-Cash-AP-PNL) di AR Management -->
+<!-- BUILD: 2026-06-28 10:30 WIB | Ganti card Collection Rate (bias basis 2025) jadi DSO Tahun Ini (2026, annualized); tabel Collection Rate pakai Penjualan Netto, bukan Bruto -->
 
 <html lang="id">
 <head>
@@ -849,6 +849,7 @@
   #dash-ar .ar-mgmt-finding-card .fc-desc b { color:var(--ink); }
   @media (max-width:900px) { #dash-ar .ar-mgmt-findings-grid { grid-template-columns:1fr; } }
   #dash-ar .ar-mgmt-clickable { cursor:pointer; }
+  #dash-ar .neg { color:var(--red); font-weight:700; }
   #dash-ar .btn-secondary { font-family:var(--mono); font-size:12px; padding:8px 18px; border-radius:6px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-dim); cursor:pointer; transition:all .15s; }
   #dash-ar .btn-secondary:hover { border-color:var(--gold); color:var(--gold); }
   #dash-ar .ar-mgmt-clickable:hover { background:rgba(201,154,91,0.08); }
@@ -2944,6 +2945,15 @@
 
   <div id="arView-mgmt" class="ar-view" style="display:none;">
 
+  <div class="section" style="margin-bottom:20px;">
+    <div class="kategori-btns" id="arMgmtGlobalKategoriBtns">
+      <button class="kategori-btn active" data-mgmtkategori="ALL">Keduanya</button>
+      <button class="kategori-btn" data-mgmtkategori="EKSTERNAL">Eksternal</button>
+      <button class="kategori-btn" data-mgmtkategori="INTERNAL">Internal</button>
+    </div>
+    <span class="note" style="display:block;margin-top:6px;">Filter ini berlaku untuk seluruh analisis &amp; tabel di tab AR Management</span>
+  </div>
+
   <div class="section">
     <div class="section-head">
       <h2>Collection Rate &amp; Korelasi Lintas Data</h2>
@@ -2951,6 +2961,13 @@
     </div>
     <div class="kpi-row" id="arMgmtCorrKpiRow" style="grid-template-columns:repeat(3,1fr);"></div>
     <div class="ar-mgmt-findings-grid" id="arMgmtFindingsGrid" style="margin-top:18px;"></div>
+    <div style="margin-top:24px;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-bottom:10px;">Collection Rate Bulanan 2026 &middot; klik kolom bulan untuk lihat detail</div>
+      <div class="panel" style="padding:0;overflow-x:auto;">
+        <table id="arMgmtCollectionTable" style="width:100%;border-collapse:collapse;"></table>
+      </div>
+      <div class="pnl-table-insight" id="arMgmtCollectionInsight" style="margin-top:14px;"></div>
+    </div>
   </div>
 
   <div class="section">
@@ -2983,13 +3000,8 @@
 
   <div class="section">
     <div class="section-head">
-      <h2>Tanggung Jawab per Sales</h2>
+      <h2>AR per Sales</h2>
       <span class="note">semua sales dengan piutang outstanding &middot; klik baris untuk lihat rincian AR sales tersebut</span>
-    </div>
-    <div class="kategori-btns" id="arMgmtSalesKategoriBtns" style="margin-bottom:14px;">
-      <button class="kategori-btn active" data-mgmtkategori="ALL">Keduanya</button>
-      <button class="kategori-btn" data-mgmtkategori="EKSTERNAL">Eksternal</button>
-      <button class="kategori-btn" data-mgmtkategori="INTERNAL">Internal</button>
     </div>
     <div class="panel" style="padding:0;overflow-x:auto;">
       <table id="arMgmtSalesTable" style="width:100%;border-collapse:collapse;"></table>
@@ -10515,8 +10527,8 @@ if (AP_ITEMS && AP_ITEMS.length) {
 <script>
 // ============ AR MANAGEMENT (sub-tab on AR page) ============
 (function() {
-  const AR_ITEMS = window.__AR_ITEMS__;
-  if (!AR_ITEMS) return;
+  const AR_ITEMS_ALL = window.__AR_ITEMS__;
+  if (!AR_ITEMS_ALL) return;
 
   // --- Tab switching ---
   document.querySelectorAll('#arNavTabs .nav-tab').forEach(btn => {
@@ -10546,80 +10558,9 @@ if (AP_ITEMS && AP_ITEMS.length) {
     return Math.round((TODAY_DATE_AM - due) / (1000*60*60*24));
   }
 
-  const total = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
-  const overdueItems = AR_ITEMS.filter(it => { const dl = daysLateAm(it.due_date); return dl !== null && dl > 0; });
-  const overdueTotal = overdueItems.reduce((s,it)=>s+it.nominal, 0);
-  const overduePct = total ? (overdueTotal/total*100) : 0;
-  const notOverdueTotal = total - overdueTotal;
-
-  // Severity buckets
-  const severityDefs = [
-    { key:'belum', label:'Belum Jatuh Tempo', test: dl => dl === null || dl <= 0, cls:'sev-low' },
-    { key:'d0_90', label:'0–90 Hari Telat', test: dl => dl > 0 && dl <= 90, cls:'sev-low' },
-    { key:'d91_360', label:'91–360 Hari Telat', test: dl => dl > 90 && dl <= 360, cls:'sev-mid' },
-    { key:'d360plus', label:'> 360 Hari Telat', test: dl => dl > 360, cls:'sev-high' },
-  ];
-  const severityTotals = {};
-  severityDefs.forEach(s => severityTotals[s.key] = 0);
-  AR_ITEMS.forEach(it => {
-    const dl = daysLateAm(it.due_date);
-    const matched = severityDefs.find(s => s.test(dl));
-    if (matched) severityTotals[matched.key] += it.nominal;
-  });
-
-  document.getElementById('arMgmtSeverityGrid').innerHTML = severityDefs.map(s => {
-    const v = severityTotals[s.key];
-    const pct = total ? (v/total*100) : 0;
-    return `<div class="ar-mgmt-severity-item ${s.cls}">
-      <div class="sev-label">${s.label}</div>
-      <div class="sev-value">${fmtRpAm(v)}</div>
-      <div class="sev-pct">${pct.toFixed(1)}% dari total AR</div>
-    </div>`;
-  }).join('');
-
-  const chronicTotal = severityTotals['d360plus'];
-  const chronicPct = total ? (chronicTotal/total*100) : 0;
-  const kategoriInternal = AR_ITEMS.filter(it=>it.kategori==='INTERNAL').reduce((s,it)=>s+it.nominal,0);
-  const kategoriInternalPct = total ? (kategoriInternal/total*100) : 0;
-
-  // Narrative
-  // Build concrete examples for the narrative (longest-overdue customers, and a sample of internal entities)
-  const custAggForNarrative = {};
-  AR_ITEMS.forEach(it => {
-    const dl = daysLateAm(it.due_date);
-    if (dl === null || dl <= 360) return;
-    if (!custAggForNarrative[it.customer]) custAggForNarrative[it.customer] = { nominal:0, maxDays:0 };
-    custAggForNarrative[it.customer].nominal += it.nominal;
-    custAggForNarrative[it.customer].maxDays = Math.max(custAggForNarrative[it.customer].maxDays, dl);
-  });
-  const chronicTop3 = Object.entries(custAggForNarrative).sort((a,b)=>b[1].nominal-a[1].nominal).slice(0,3);
-  const chronicTopExamples = chronicTop3.map(([c,d]) => `<b>${c}</b> (${fmtRpAm(d.nominal)}, ${d.maxDays} hari)`).join(', ');
-
-  const internalCustomers = [...new Set(AR_ITEMS.filter(it=>it.kategori==='INTERNAL').map(it=>it.customer))].slice(0,3);
-  const internalExamples = internalCustomers.map(c=>`<b>${c}</b>`).join(', ') || 'beberapa entitas afiliasi';
-
-  document.getElementById('arMgmtNarrative').innerHTML = `
-    <p><b>Gambaran besar.</b> Per <b>${new Date(window.__AR_SNAPSHOT_DATE__+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</b>, total piutang SEA tercatat <b>${fmtRpAm(total)}</b> dari ${AR_ITEMS.length} transaksi outstanding di 7 cabang dan 35 sales. Dari jumlah ini, <b style="color:var(--red);">${overduePct.toFixed(1)}% (${fmtRpAm(overdueTotal)}) sudah lewat tanggal jatuh tempo</b> — jauh di luar siklus pembayaran normal untuk bisnis wholesale/retail dengan Term of Payment 45 hari. Hanya ${fmtRpAm(notOverdueTotal)} (${(100-overduePct).toFixed(1)}%) yang posisinya masih wajar.</p>
-    <p><b>Ini bukan sekadar "telat bayar".</b> Begitu kita pecah berdasarkan berapa lama keterlambatannya, gambarannya berubah total: <b>${chronicPct.toFixed(1)}% dari seluruh piutang (${fmtRpAm(chronicTotal)}) sudah menunggak lebih dari 360 hari</b> — bukan telat sebulan-dua bulan, tapi sudah lebih dari setahun. Hanya sekitar 9% dari total AR yang keterlambatannya masih dalam rentang wajar (di bawah 30 hari). Artinya, mayoritas piutang yang "overdue" itu bukan piutang yang baru lewat tempo dan masih realistis ditagih — itu piutang yang sudah lama dibiarkan, dan kemungkinan besar sudah jadi piutang macet yang sulit dikonversi jadi kas.</p>
-    <p><b>Contoh paling mencolok:</b> ${chronicTopExamples}. Piutang dengan umur seperti ini, secara praktik akuntansi konservatif, biasanya sudah perlu dipertimbangkan untuk <b>provisi kerugian atau write-off</b> — bukan lagi sekadar "ditagih lebih giat".</p>
-    <p><b>Satu hal penting untuk dipisahkan:</b> <b>${kategoriInternalPct.toFixed(1)}% (${fmtRpAm(kategoriInternal)}) dari total piutang adalah ke entitas internal grup Syaamil/Sygma sendiri</b> (seperti ${internalExamples}), bukan customer eksternal murni. Penagihan piutang internal ini bersifat keputusan finansial antar-entitas grup — bukan tanggung jawab penagihan lapangan oleh sales.</p>
-  `;
-
-  // --- Per Cabang ---
-  const byEntitas = {};
-  AR_ITEMS.forEach(it => {
-    if (!byEntitas[it.entitas]) byEntitas[it.entitas] = { total:0, overdue:0, count:0, overdueCount:0 };
-    byEntitas[it.entitas].total += it.nominal;
-    byEntitas[it.entitas].count += 1;
-    const dl = daysLateAm(it.due_date);
-    if (dl !== null && dl > 0) {
-      byEntitas[it.entitas].overdue += it.nominal;
-      byEntitas[it.entitas].overdueCount += 1;
-    }
-  });
-  const cabangRows = Object.entries(byEntitas).map(([e,d]) => ({
-    entitas: e, ...d, pct: d.total ? (d.overdue/d.total*100) : 0
-  })).sort((a,b) => b.pct - a.pct);
+  const SALES_VISIBLE_DEFAULT = 10;
+  let arMgmtGlobalKategori = 'ALL';
+  let arMgmtSalesShowAll = false;
 
   function cabangAnalysisText(r, rank, n) {
     if (r.pct >= 90) return rank === 0 ? 'Tertinggi — perlu perhatian segera' : 'Sangat tinggi, di atas rata-rata';
@@ -10628,26 +10569,6 @@ if (AP_ITEMS && AP_ITEMS.length) {
     return 'Di kisaran rata-rata cabang lain';
   }
 
-  const cabangThead = '<tr><th>Cabang</th><th>Total AR</th><th>Overdue</th><th>% Overdue</th><th>Item</th><th>Analisis</th></tr>';
-  const cabangTbody = cabangRows.map((r,i) => {
-    const cls = r.pct >= 90 ? 'yoy-neg' : (r.pct >= 70 ? '' : 'yoy-pos');
-    return `<tr class="ar-mgmt-clickable" data-mgmttype="cabang" data-mgmtkey="${r.entitas.replace(/"/g,'&quot;')}">
-      <td>${r.entitas}</td>
-      <td data-sort-value="${r.total}">${fmtRpAm(r.total)}</td>
-      <td data-sort-value="${r.overdue}">${fmtRpAm(r.overdue)}</td>
-      <td class="${cls}" data-sort-value="${r.pct}" style="font-weight:700;">${r.pct.toFixed(1)}%</td>
-      <td data-sort-value="${r.overdueCount}">${r.overdueCount} / ${r.count}</td>
-      <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${cabangAnalysisText(r,i,cabangRows.length)}</td>
-    </tr>`;
-  }).join('');
-  document.getElementById('arMgmtCabangTable').innerHTML = `<thead>${cabangThead}</thead><tbody>${cabangTbody}</tbody>`;
-  if (window.makeSortableTable) window.makeSortableTable('arMgmtCabangTable');
-
-  // --- Per Sales ---
-  let arMgmtSalesKategoriFilter = 'ALL';
-  let arMgmtSalesShowAll = false;
-  const SALES_VISIBLE_DEFAULT = 10;
-
   function salesAnalysisText(r) {
     if (r.pct >= 95) return 'Hampir seluruh piutang overdue — perlu tindak lanjut khusus';
     if (r.pct >= 80) return 'Rasio overdue tinggi';
@@ -10655,12 +10576,125 @@ if (AP_ITEMS && AP_ITEMS.length) {
     return 'Praktik penagihan relatif baik';
   }
 
-  let arMgmtSalesRowsAll = []; // always computed from ALL items, for Action Plan use regardless of active UI filter
+  function topAnalysisText(days) {
+    if (days > 1000) return 'Kronis bertahun-tahun — kandidat write-off';
+    if (days > 360) return 'Sudah lewat 1 tahun — prioritas penagihan khusus';
+    if (days > 90) return 'Cukup lama, masih layak ditagih intensif';
+    return 'Baru lewat tempo, follow-up rutin cukup';
+  }
 
-  function renderSalesTable() {
-    const filteredItems = arMgmtSalesKategoriFilter === 'ALL' ? AR_ITEMS : AR_ITEMS.filter(it => it.kategori === arMgmtSalesKategoriFilter);
+  // ============ MASTER RENDER: re-runs every sub-section using the currently
+  // selected global kategori filter (ALL / EKSTERNAL / INTERNAL) ============
+  function renderAllArMgmt() {
+    const AR_ITEMS = arMgmtGlobalKategori === 'ALL'
+      ? AR_ITEMS_ALL
+      : AR_ITEMS_ALL.filter(it => it.kategori === arMgmtGlobalKategori);
+
+    const total = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+    const overdueItems = AR_ITEMS.filter(it => { const dl = daysLateAm(it.due_date); return dl !== null && dl > 0; });
+    const overdueTotal = overdueItems.reduce((s,it)=>s+it.nominal, 0);
+    const overduePct = total ? (overdueTotal/total*100) : 0;
+    const notOverdueTotal = total - overdueTotal;
+
+    // --- Severity buckets ---
+    const severityDefs = [
+      { key:'belum', label:'Belum Jatuh Tempo', test: dl => dl === null || dl <= 0, cls:'sev-low' },
+      { key:'d0_90', label:'0–90 Hari Telat', test: dl => dl > 0 && dl <= 90, cls:'sev-low' },
+      { key:'d91_360', label:'91–360 Hari Telat', test: dl => dl > 90 && dl <= 360, cls:'sev-mid' },
+      { key:'d360plus', label:'> 360 Hari Telat', test: dl => dl > 360, cls:'sev-high' },
+    ];
+    const severityTotals = {};
+    severityDefs.forEach(s => severityTotals[s.key] = 0);
+    AR_ITEMS.forEach(it => {
+      const dl = daysLateAm(it.due_date);
+      const matched = severityDefs.find(s => s.test(dl));
+      if (matched) severityTotals[matched.key] += it.nominal;
+    });
+
+    const severityGridEl = document.getElementById('arMgmtSeverityGrid');
+    if (severityGridEl) {
+      severityGridEl.innerHTML = severityDefs.map(s => {
+        const v = severityTotals[s.key];
+        const pct = total ? (v/total*100) : 0;
+        return `<div class="ar-mgmt-severity-item ${s.cls}">
+          <div class="sev-label">${s.label}</div>
+          <div class="sev-value">${fmtRpAm(v)}</div>
+          <div class="sev-pct">${pct.toFixed(1)}% dari total AR</div>
+        </div>`;
+      }).join('');
+    }
+
+    const chronicTotal = severityTotals['d360plus'];
+    const chronicPct = total ? (chronicTotal/total*100) : 0;
+    const kategoriInternal = AR_ITEMS_ALL.filter(it=>it.kategori==='INTERNAL').reduce((s,it)=>s+it.nominal,0);
+    const kategoriInternalPct = AR_ITEMS_ALL.length ? (kategoriInternal/AR_ITEMS_ALL.reduce((s,it)=>s+it.nominal,0)*100) : 0;
+
+    // --- Narrative ---
+    const custAggForNarrative = {};
+    AR_ITEMS.forEach(it => {
+      const dl = daysLateAm(it.due_date);
+      if (dl === null || dl <= 360) return;
+      if (!custAggForNarrative[it.customer]) custAggForNarrative[it.customer] = { nominal:0, maxDays:0 };
+      custAggForNarrative[it.customer].nominal += it.nominal;
+      custAggForNarrative[it.customer].maxDays = Math.max(custAggForNarrative[it.customer].maxDays, dl);
+    });
+    const chronicTop3 = Object.entries(custAggForNarrative).sort((a,b)=>b[1].nominal-a[1].nominal).slice(0,3);
+    const chronicTopExamples = chronicTop3.map(([c,d]) => `<b>${c}</b> (${fmtRpAm(d.nominal)}, ${d.maxDays} hari)`).join(', ') || 'tidak ditemukan pada filter ini';
+
+    const internalCustomers = [...new Set(AR_ITEMS.filter(it=>it.kategori==='INTERNAL').map(it=>it.customer))].slice(0,3);
+    const internalExamples = internalCustomers.map(c=>`<b>${c}</b>`).join(', ') || 'beberapa entitas afiliasi';
+
+    const scopeLabel = arMgmtGlobalKategori === 'ALL' ? 'piutang SEA (eksternal + internal)' : (arMgmtGlobalKategori === 'EKSTERNAL' ? 'piutang eksternal SEA' : 'piutang internal grup SEA');
+    const narrativeEl = document.getElementById('arMgmtNarrative');
+    if (narrativeEl) {
+      const internalParagraph = arMgmtGlobalKategori === 'ALL'
+        ? `<p><b>Satu hal penting untuk dipisahkan:</b> <b>${kategoriInternalPct.toFixed(1)}% (${fmtRpAm(kategoriInternal)}) dari total piutang adalah ke entitas internal grup Syaamil/Sygma sendiri</b> (seperti ${internalExamples}), bukan customer eksternal murni. Penagihan piutang internal ini bersifat keputusan finansial antar-entitas grup — bukan tanggung jawab penagihan lapangan oleh sales.</p>`
+        : '';
+      narrativeEl.innerHTML = `
+        <p><b>Gambaran besar.</b> Dengan filter <b>${scopeLabel}</b> aktif, total piutang tercatat <b>${fmtRpAm(total)}</b> dari ${AR_ITEMS.length} transaksi outstanding. Dari jumlah ini, <b style="color:var(--red);">${overduePct.toFixed(1)}% (${fmtRpAm(overdueTotal)}) sudah lewat tanggal jatuh tempo</b> — jauh di luar siklus pembayaran normal untuk bisnis wholesale/retail dengan Term of Payment 45 hari. Hanya ${fmtRpAm(notOverdueTotal)} (${(100-overduePct).toFixed(1)}%) yang posisinya masih wajar.</p>
+        <p><b>Ini bukan sekadar "telat bayar".</b> Begitu kita pecah berdasarkan berapa lama keterlambatannya, gambarannya berubah total: <b>${chronicPct.toFixed(1)}% dari ${scopeLabel} (${fmtRpAm(chronicTotal)}) sudah menunggak lebih dari 360 hari</b> — bukan telat sebulan-dua bulan, tapi sudah lebih dari setahun. Artinya, mayoritas piutang yang "overdue" itu bukan piutang yang baru lewat tempo dan masih realistis ditagih — itu piutang yang sudah lama dibiarkan, dan kemungkinan besar sudah jadi piutang macet yang sulit dikonversi jadi kas.</p>
+        <p><b>Contoh paling mencolok:</b> ${chronicTopExamples}. Piutang dengan umur seperti ini, secara praktik akuntansi konservatif, biasanya sudah perlu dipertimbangkan untuk <b>provisi kerugian atau write-off</b> — bukan lagi sekadar "ditagih lebih giat".</p>
+        ${internalParagraph}
+      `;
+    }
+
+    // --- Per Cabang ---
+    const byEntitas = {};
+    AR_ITEMS.forEach(it => {
+      if (!byEntitas[it.entitas]) byEntitas[it.entitas] = { total:0, overdue:0, count:0, overdueCount:0 };
+      byEntitas[it.entitas].total += it.nominal;
+      byEntitas[it.entitas].count += 1;
+      const dl = daysLateAm(it.due_date);
+      if (dl !== null && dl > 0) {
+        byEntitas[it.entitas].overdue += it.nominal;
+        byEntitas[it.entitas].overdueCount += 1;
+      }
+    });
+    const cabangRows = Object.entries(byEntitas).map(([e,d]) => ({
+      entitas: e, ...d, pct: d.total ? (d.overdue/d.total*100) : 0
+    })).sort((a,b) => b.pct - a.pct);
+
+    const cabangTableEl = document.getElementById('arMgmtCabangTable');
+    if (cabangTableEl) {
+      const cabangThead = '<tr><th>Cabang</th><th>Total AR</th><th>Overdue</th><th>% Overdue</th><th>Item</th><th>Analisis</th></tr>';
+      const cabangTbody = cabangRows.map((r,i) => {
+        const cls = r.pct >= 90 ? 'yoy-neg' : (r.pct >= 70 ? '' : 'yoy-pos');
+        return `<tr class="ar-mgmt-clickable" data-mgmttype="cabang" data-mgmtkey="${r.entitas.replace(/"/g,'&quot;')}">
+          <td>${r.entitas}</td>
+          <td data-sort-value="${r.total}">${fmtRpAm(r.total)}</td>
+          <td data-sort-value="${r.overdue}">${fmtRpAm(r.overdue)}</td>
+          <td class="${cls}" data-sort-value="${r.pct}" style="font-weight:700;">${r.pct.toFixed(1)}%</td>
+          <td data-sort-value="${r.overdueCount}">${r.overdueCount} / ${r.count}</td>
+          <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${cabangAnalysisText(r,i,cabangRows.length)}</td>
+        </tr>`;
+      }).join('');
+      cabangTableEl.innerHTML = `<thead>${cabangThead}</thead><tbody>${cabangTbody}</tbody>`;
+      if (window.makeSortableTable) window.makeSortableTable('arMgmtCabangTable');
+    }
+
+    // --- AR per Sales ---
     const bySales = {};
-    filteredItems.forEach(it => {
+    AR_ITEMS.forEach(it => {
       if (!bySales[it.sales]) bySales[it.sales] = { total:0, overdue:0, count:0, entitas:new Set() };
       bySales[it.sales].total += it.nominal;
       bySales[it.sales].entitas.add(it.entitas);
@@ -10672,22 +10706,25 @@ if (AP_ITEMS && AP_ITEMS.length) {
       sales: s, ...d, entitas: [...d.entitas].join(', '), pct: d.total ? (d.overdue/d.total*100) : 0
     })).sort((a,b) => b.total - a.total);
 
-    const salesThead = '<tr><th>Sales</th><th>Cabang</th><th>Total AR</th><th>Overdue</th><th>% Overdue</th><th>Item</th><th>Analisis</th></tr>';
-    const salesTbody = salesRows.map((r, idx) => {
-      const cls = r.pct >= 90 ? 'yoy-neg' : (r.pct >= 70 ? '' : 'yoy-pos');
-      const hiddenRow = (!arMgmtSalesShowAll && idx >= SALES_VISIBLE_DEFAULT) ? ' style="display:none;"' : '';
-      return `<tr class="ar-mgmt-clickable"${hiddenRow} data-mgmttype="sales" data-mgmtkey="${r.sales.replace(/"/g,'&quot;')}" data-mgmtkategori="${arMgmtSalesKategoriFilter}">
-        <td>${r.sales}</td>
-        <td style="font-size:11.5px;color:var(--ink-faint);">${r.entitas}</td>
-        <td data-sort-value="${r.total}">${fmtRpAm(r.total)}</td>
-        <td data-sort-value="${r.overdue}">${fmtRpAm(r.overdue)}</td>
-        <td class="${cls}" data-sort-value="${r.pct}" style="font-weight:700;">${r.pct.toFixed(1)}%</td>
-        <td data-sort-value="${r.count}">${r.count}</td>
-        <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${salesAnalysisText(r)}</td>
-      </tr>`;
-    }).join('');
-    document.getElementById('arMgmtSalesTable').innerHTML = `<thead>${salesThead}</thead><tbody>${salesTbody}</tbody>`;
-    if (window.makeSortableTable) window.makeSortableTable('arMgmtSalesTable');
+    const salesTableEl = document.getElementById('arMgmtSalesTable');
+    if (salesTableEl) {
+      const salesThead = '<tr><th>Sales</th><th>Cabang</th><th>Total AR</th><th>Overdue</th><th>% Overdue</th><th>Item</th><th>Analisis</th></tr>';
+      const salesTbody = salesRows.map((r, idx) => {
+        const cls = r.pct >= 90 ? 'yoy-neg' : (r.pct >= 70 ? '' : 'yoy-pos');
+        const hiddenRow = (!arMgmtSalesShowAll && idx >= SALES_VISIBLE_DEFAULT) ? ' style="display:none;"' : '';
+        return `<tr class="ar-mgmt-clickable"${hiddenRow} data-mgmttype="sales" data-mgmtkey="${r.sales.replace(/"/g,'&quot;')}">
+          <td>${r.sales}</td>
+          <td style="font-size:11.5px;color:var(--ink-faint);">${r.entitas}</td>
+          <td data-sort-value="${r.total}">${fmtRpAm(r.total)}</td>
+          <td data-sort-value="${r.overdue}">${fmtRpAm(r.overdue)}</td>
+          <td class="${cls}" data-sort-value="${r.pct}" style="font-weight:700;">${r.pct.toFixed(1)}%</td>
+          <td data-sort-value="${r.count}">${r.count}</td>
+          <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${salesAnalysisText(r)}</td>
+        </tr>`;
+      }).join('');
+      salesTableEl.innerHTML = `<thead>${salesThead}</thead><tbody>${salesTbody}</tbody>`;
+      if (window.makeSortableTable) window.makeSortableTable('arMgmtSalesTable');
+    }
 
     const hiddenCount = salesRows.length - SALES_VISIBLE_DEFAULT;
     const showMoreWrap = document.getElementById('arMgmtSalesShowMoreWrap');
@@ -10700,29 +10737,8 @@ if (AP_ITEMS && AP_ITEMS.length) {
         showMoreWrap.style.display = 'none';
       }
     }
-    renderSalesInsight(salesRows);
 
-    // Keep an unfiltered (ALL) version available for the Action Plan section below,
-    // independent of whatever kategori filter is currently active in the UI.
-    if (arMgmtSalesKategoriFilter === 'ALL') {
-      arMgmtSalesRowsAll = salesRows;
-    } else {
-      const byAll = {};
-      AR_ITEMS.forEach(it => {
-        if (!byAll[it.sales]) byAll[it.sales] = { total:0, overdue:0, count:0, entitas:new Set() };
-        byAll[it.sales].total += it.nominal;
-        byAll[it.sales].entitas.add(it.entitas);
-        byAll[it.sales].count += 1;
-        const dl = daysLateAm(it.due_date);
-        if (dl !== null && dl > 0) byAll[it.sales].overdue += it.nominal;
-      });
-      arMgmtSalesRowsAll = Object.entries(byAll).map(([s,d]) => ({
-        sales: s, ...d, entitas: [...d.entitas].join(', '), pct: d.total ? (d.overdue/d.total*100) : 0
-      })).sort((a,b) => b.total - a.total);
-    }
-  }
-
-  function renderSalesInsight(salesRows) {
+    // Sales insight: biggest within-branch contrast (only compares sales with reasonably similar AR size)
     let biggestContrast = null;
     const salesByBranch = {};
     salesRows.forEach(r => {
@@ -10749,17 +10765,105 @@ if (AP_ITEMS && AP_ITEMS.length) {
       }
       salesInsightEl.innerHTML = html;
     }
+
+    // --- Top 10 overdue ---
+    const custAgg = {};
+    AR_ITEMS.forEach(it => {
+      const dl = daysLateAm(it.due_date);
+      if (dl === null || dl <= 0) return;
+      if (!custAgg[it.customer]) custAgg[it.customer] = { nominal:0, sales:new Set(), entitas:new Set(), maxDays:0 };
+      custAgg[it.customer].nominal += it.nominal;
+      custAgg[it.customer].sales.add(it.sales);
+      custAgg[it.customer].entitas.add(it.entitas);
+      custAgg[it.customer].maxDays = Math.max(custAgg[it.customer].maxDays, dl);
+    });
+    const top10 = Object.entries(custAgg).sort((a,b)=>b[1].nominal-a[1].nominal).slice(0,10);
+
+    const topTableEl = document.getElementById('arMgmtTopOverdueTable');
+    if (topTableEl) {
+      const topThead = '<tr><th>Customer</th><th>Nominal</th><th>Hari Telat</th><th>Sales</th><th>Cabang</th><th>Analisis</th></tr>';
+      const topTbody = top10.map(([c,d]) => `<tr class="ar-mgmt-clickable" data-mgmttype="customer" data-mgmtkey="${c.replace(/"/g,'&quot;')}">
+        <td>${c}</td>
+        <td data-sort-value="${d.nominal}">${fmtRpAm(d.nominal)}</td>
+        <td data-sort-value="${d.maxDays}" style="font-weight:700;color:${d.maxDays>360?'var(--red)':'var(--ink)'};">${d.maxDays} hari</td>
+        <td>${[...d.sales].join(', ')}</td>
+        <td>${[...d.entitas].join(', ')}</td>
+        <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${topAnalysisText(d.maxDays)}</td>
+      </tr>`).join('');
+      topTableEl.innerHTML = `<thead>${topThead}</thead><tbody>${topTbody}</tbody>`;
+      if (window.makeSortableTable) window.makeSortableTable('arMgmtTopOverdueTable');
+    }
+
+    // --- Action Plan ---
+    const worstCabang = cabangRows[0];
+    const worstSales = salesRows.filter(r=>r.pct>=95 && r.total>1e8).sort((a,b)=>b.total-a.total)[0];
+    const actions = [];
+
+    actions.push({
+      priority: 1,
+      title: `Audit piutang kronis (>360 hari) sebesar ${fmtRpAm(chronicTotal)}`,
+      desc: `${chronicPct.toFixed(1)}% dari ${scopeLabel} sudah menunggak lebih dari setahun. Untuk piutang ini, evaluasi realistis: tagih dengan upaya khusus (negosiasi langsung/somasi), atau usulkan provisi/write-off jika sudah tidak realistis ditagih. Lihat tabel "Top 10 Piutang Paling Lama Menunggak" di atas untuk daftar prioritas.`
+    });
+
+    if (worstCabang) {
+      actions.push({
+        priority: 1,
+        title: `Evaluasi praktik penagihan di cabang ${worstCabang.entitas}`,
+        desc: `Cabang ini punya rasio overdue tertinggi (${worstCabang.pct.toFixed(1)}%) dari total AR ${fmtRpAm(worstCabang.total)} (pada filter ${scopeLabel}). Minta laporan tindak lanjut penagihan per sales di cabang ini secara berkala.`
+      });
+    }
+
+    if (worstSales) {
+      actions.push({
+        priority: 2,
+        title: `Tindak lanjut khusus untuk sales dengan piutang besar & rasio overdue ekstrem`,
+        desc: `<b>${worstSales.sales}</b> (${worstSales.entitas}) memegang piutang ${fmtRpAm(worstSales.total)} dengan ${worstSales.pct.toFixed(1)}% overdue. Lakukan review satu-satu untuk memahami penyebab (relasi customer, kebijakan kredit yang terlalu longgar, atau kurang aktif menagih).`
+      });
+    }
+
+    if (arMgmtGlobalKategori !== 'INTERNAL' && kategoriInternalPct > 15) {
+      actions.push({
+        priority: 2,
+        title: 'Selesaikan piutang internal lewat keputusan grup, bukan jalur penagihan sales',
+        desc: `${kategoriInternalPct.toFixed(1)}% (${fmtRpAm(kategoriInternal)}) dari total AR (semua kategori) adalah piutang ke entitas internal grup. Ini perlu diselesaikan lewat keputusan struktur permodalan/intercompany di level manajemen grup, terpisah dari KPI penagihan sales lapangan.`
+      });
+    }
+
+    actions.push({
+      priority: 3,
+      title: 'Jadikan rasio overdue per sales sebagai bagian evaluasi kinerja rutin',
+      desc: `Variasi rasio overdue antar sales (bahkan di cabang yang sama) sangat lebar — ini menunjukkan faktor personal turut berperan, bukan cuma kondisi pasar/wilayah. Pertimbangkan menambahkan metrik "rasio piutang overdue" ke evaluasi kinerja sales secara berkala.`
+    });
+
+    const priorityLabel = { 1:'P1', 2:'P2', 3:'P3' };
+    const actionPlanEl = document.getElementById('arMgmtActionPlan');
+    if (actionPlanEl) {
+      actionPlanEl.innerHTML = actions.map(a => `
+        <div class="ap-item">
+          <div class="ap-priority p${a.priority}">${priorityLabel[a.priority]}</div>
+          <div class="ap-body">
+            <div class="ap-title">${a.title}</div>
+            <div class="ap-desc">${a.desc}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Re-run the Collection Rate correlation render (defined in the P&L script block further
+    // down) so it also reflects the active global filter, if that function has registered itself.
+    if (typeof window.__renderArMgmtCorrelation === 'function') {
+      window.__renderArMgmtCorrelation(arMgmtGlobalKategori, AR_ITEMS);
+    }
   }
 
-  renderSalesTable();
-
-  document.querySelectorAll('#arMgmtSalesKategoriBtns .kategori-btn').forEach(btn => {
+  // ---- Global filter buttons ----
+  document.querySelectorAll('#arMgmtGlobalKategoriBtns .kategori-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#arMgmtSalesKategoriBtns .kategori-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#arMgmtGlobalKategoriBtns .kategori-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      arMgmtSalesKategoriFilter = btn.dataset.mgmtkategori;
+      arMgmtGlobalKategori = btn.dataset.mgmtkategori;
       arMgmtSalesShowAll = false;
-      renderSalesTable();
+      renderAllArMgmt();
     });
   });
 
@@ -10767,41 +10871,11 @@ if (AP_ITEMS && AP_ITEMS.length) {
   if (arMgmtSalesShowMoreBtnEl) {
     arMgmtSalesShowMoreBtnEl.addEventListener('click', () => {
       arMgmtSalesShowAll = !arMgmtSalesShowAll;
-      renderSalesTable();
+      renderAllArMgmt();
     });
   }
 
-  // --- Top 10 overdue ---
-  const custAgg = {};
-  AR_ITEMS.forEach(it => {
-    const dl = daysLateAm(it.due_date);
-    if (dl === null || dl <= 0) return;
-    if (!custAgg[it.customer]) custAgg[it.customer] = { nominal:0, sales:new Set(), entitas:new Set(), maxDays:0 };
-    custAgg[it.customer].nominal += it.nominal;
-    custAgg[it.customer].sales.add(it.sales);
-    custAgg[it.customer].entitas.add(it.entitas);
-    custAgg[it.customer].maxDays = Math.max(custAgg[it.customer].maxDays, dl);
-  });
-  const top10 = Object.entries(custAgg).sort((a,b)=>b[1].nominal-a[1].nominal).slice(0,10);
-
-  function topAnalysisText(days) {
-    if (days > 1000) return 'Kronis bertahun-tahun — kandidat write-off';
-    if (days > 360) return 'Sudah lewat 1 tahun — prioritas penagihan khusus';
-    if (days > 90) return 'Cukup lama, masih layak ditagih intensif';
-    return 'Baru lewat tempo, follow-up rutin cukup';
-  }
-
-  const topThead = '<tr><th>Customer</th><th>Nominal</th><th>Hari Telat</th><th>Sales</th><th>Cabang</th><th>Analisis</th></tr>';
-  const topTbody = top10.map(([c,d]) => `<tr class="ar-mgmt-clickable" data-mgmttype="customer" data-mgmtkey="${c.replace(/"/g,'&quot;')}">
-    <td>${c}</td>
-    <td data-sort-value="${d.nominal}">${fmtRpAm(d.nominal)}</td>
-    <td data-sort-value="${d.maxDays}" style="font-weight:700;color:${d.maxDays>360?'var(--red)':'var(--ink)'};">${d.maxDays} hari</td>
-    <td>${[...d.sales].join(', ')}</td>
-    <td>${[...d.entitas].join(', ')}</td>
-    <td style="font-size:12px;color:var(--ink-dim);font-style:italic;">${topAnalysisText(d.maxDays)}</td>
-  </tr>`).join('');
-  document.getElementById('arMgmtTopOverdueTable').innerHTML = `<thead>${topThead}</thead><tbody>${topTbody}</tbody>`;
-  if (window.makeSortableTable) window.makeSortableTable('arMgmtTopOverdueTable');
+  renderAllArMgmt();
 
   // --- Drill-down modal: click a row in any of the 3 tables above to see the underlying AR_ITEMS ---
   const mgmtModalOverlay = document.getElementById('arMgmtModalOverlay');
@@ -10811,6 +10885,7 @@ if (AP_ITEMS && AP_ITEMS.length) {
   if (mgmtModalOverlay) mgmtModalOverlay.addEventListener('click', (e) => { if (e.target === mgmtModalOverlay) closeMgmtModal(); });
 
   function openMgmtModal(type, key) {
+    const AR_ITEMS = arMgmtGlobalKategori === 'ALL' ? AR_ITEMS_ALL : AR_ITEMS_ALL.filter(it => it.kategori === arMgmtGlobalKategori);
     let items, title, sub;
     if (type === 'cabang') {
       items = AR_ITEMS.filter(it => it.entitas === key);
@@ -10860,67 +10935,8 @@ if (AP_ITEMS && AP_ITEMS.length) {
       openMgmtModal(row.dataset.mgmttype, row.dataset.mgmtkey);
     });
   });
-
-  // --- Action Plan ---
-// --- Action Plan ---
-  const worstCabang = cabangRows[0];
-  const worstSales = arMgmtSalesRowsAll.filter(r=>r.pct>=95 && r.total>1e8).sort((a,b)=>b.total-a.total)[0];
-  const actions = [];
-
-  actions.push({
-    priority: 1,
-    title: `Audit piutang kronis (>360 hari) sebesar ${fmtRpAm(chronicTotal)}`,
-    desc: `${chronicPct.toFixed(1)}% dari total AR sudah menunggak lebih dari setahun. Untuk piutang ini, evaluasi realistis: tagih dengan upaya khusus (negosiasi langsung/somasi), atau usulkan provisi/write-off jika sudah tidak realistis ditagih. Lihat tabel "Top 10 Piutang Paling Lama Menunggak" di atas untuk daftar prioritas.`
-  });
-
-  if (worstCabang) {
-    actions.push({
-      priority: 1,
-      title: `Evaluasi praktik penagihan di cabang ${worstCabang.entitas}`,
-      desc: `Cabang ini punya rasio overdue tertinggi (${worstCabang.pct.toFixed(1)}%) dari total AR ${fmtRpAm(worstCabang.total)}. Minta laporan tindak lanjut penagihan per sales di cabang ini secara berkala.`
-    });
-  }
-
-  if (worstSales) {
-    actions.push({
-      priority: 2,
-      title: `Tindak lanjut khusus untuk sales dengan piutang besar & rasio overdue ekstrem`,
-      desc: `<b>${worstSales.sales}</b> (${worstSales.entitas}) memegang piutang ${fmtRpAm(worstSales.total)} dengan ${worstSales.pct.toFixed(1)}% overdue. Lakukan review satu-satu untuk memahami penyebab (relasi customer, kebijakan kredit yang terlalu longgar, atau kurang aktif menagih).`
-    });
-  }
-
-  if (kategoriInternalPct > 15) {
-    actions.push({
-      priority: 2,
-      title: 'Selesaikan piutang internal lewat keputusan grup, bukan jalur penagihan sales',
-      desc: `${kategoriInternalPct.toFixed(1)}% (${fmtRpAm(kategoriInternal)}) dari AR adalah piutang ke entitas internal grup. Ini perlu diselesaikan lewat keputusan struktur permodalan/intercompany di level manajemen grup, terpisah dari KPI penagihan sales lapangan.`
-    });
-  }
-
-  actions.push({
-    priority: 3,
-    title: 'Jadikan rasio overdue per sales sebagai bagian evaluasi kinerja rutin',
-    desc: `Variasi rasio overdue antar sales (bahkan di cabang yang sama) sangat lebar — ini menunjukkan faktor personal turut berperan, bukan cuma kondisi pasar/wilayah. Pertimbangkan menambahkan metrik "rasio piutang overdue" ke evaluasi kinerja sales secara berkala.`
-  });
-
-  const priorityLabel = { 1:'P1', 2:'P2', 3:'P3' };
-  document.getElementById('arMgmtActionPlan').innerHTML = actions.map(a => `
-    <div class="ap-item">
-      <div class="ap-priority p${a.priority}">${priorityLabel[a.priority]}</div>
-      <div class="ap-body">
-        <div class="ap-title">${a.title}</div>
-        <div class="ap-desc">${a.desc}</div>
-      </div>
-    </div>
-  `).join('');
 })();
-</script>
 
-
-
-
-
-<script>
 // ============ PROFIT & LOSS PAGE ============
 (function() {
 
@@ -11569,13 +11585,17 @@ function pnlRenderYearSelector() {
 // in the script execution order. The target elements (#arMgmtCorrKpiRow, etc.) live on
 // the AR page, which is fine since this is a single-page app — getElementById works
 // across "pages" regardless of which script populates it.
+//
+// This block exposes window.__renderArMgmtCorrelation(kategoriFilter, filteredArItems) so
+// the AR Management script's global Eksternal/Internal filter can re-trigger this section
+// without duplicating the underlying calculations.
 (function() {
-  const AR_ITEMS = window.__AR_ITEMS__;
+  const AR_ITEMS_ALL_CORR = window.__AR_ITEMS__;
   const AP_ITEMS = window.__AP_ITEMS__;
   const SALDO = window.__SALDO__;
   const kpiRowEl = document.getElementById('arMgmtCorrKpiRow');
   const findingsEl = document.getElementById('arMgmtFindingsGrid');
-  if (!AR_ITEMS || !kpiRowEl || !findingsEl) return;
+  if (!AR_ITEMS_ALL_CORR || !kpiRowEl || !findingsEl) return;
 
   function fmtRpCorr(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
@@ -11594,92 +11614,268 @@ function pnlRenderYearSelector() {
     return Math.round((TODAY_DATE_CORR - due) / (1000*60*60*24));
   }
 
-  const arTotal = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
-  const arOverdue = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 0).reduce((s,it)=>s+it.nominal, 0);
-  const arChronic = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
-  const arChronicInternal = AR_ITEMS.filter(it => it.kategori==='INTERNAL' && (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
-
-  // --- DSO using full-year 2025 (complete year, most reliable basis) ---
-  const netto2025 = PNL_DATA.data && Object.keys(PNL_DATA.data).filter(k=>k.startsWith('2025-'))
-    .reduce((s,k) => s + (PNL_DATA.data[k]['Pendapatan Netto']||0), 0);
-  const dso2025 = netto2025 ? (arTotal/netto2025*365) : null;
-  const TOP_DAYS = 45;
-  // Collection Rate: how close actual collection speed is to the agreed TOP (45 days).
-  // 100% = collecting exactly on time; lower % = taking proportionally longer than agreed.
-  const collectionRate = dso2025 ? Math.min(100, (TOP_DAYS/dso2025*100)) : null;
-
-  // --- Cash correlation ---
+  const apTotal = AP_ITEMS ? AP_ITEMS.reduce((s,it)=>s+it.nominal,0) : 0;
+  const apOverdue = AP_ITEMS ? AP_ITEMS.filter(it=>it.due_date && it.due_date < TODAY_STR_CORR).reduce((s,it)=>s+it.nominal,0) : 0;
   let saldoTersedia = null;
   if (SALDO) {
     const active = (SALDO.daily||[]).filter(d=>d.debit||d.kredit).sort((a,b)=>a.date.localeCompare(b.date));
     if (active.length) saldoTersedia = active[active.length-1].saldoTersedia;
   }
-  const apTotal = AP_ITEMS ? AP_ITEMS.reduce((s,it)=>s+it.nominal,0) : 0;
-  const apOverdue = AP_ITEMS ? AP_ITEMS.filter(it=>it.due_date && it.due_date < TODAY_STR_CORR).reduce((s,it)=>s+it.nominal,0) : 0;
-  const liquidityRatio = apOverdue ? (saldoTersedia/apOverdue*100) : null;
 
-  // --- NPM YTD (cascade-corrected, actual months only) ---
-  let npmYtd = null;
-  if (PNL_DATA.data) {
-    const curY = TODAY_YEAR, curM = TODAY_MONTH;
-    let sum = 0, hasAny = false;
-    for (let m=1; m<=12; m++) {
+  function renderKpiAndFindings(kategoriFilter, AR_ITEMS) {
+    const arTotal = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+    const arChronic = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
+    const arChronicInternal = AR_ITEMS_ALL_CORR.filter(it => it.kategori==='INTERNAL' && (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
+
+    // DSO using the CURRENT year (2026) only: actual months so far (Jan..last actual month),
+// annualized via run-rate, so the basis period matches the AR snapshot's own year rather
+// than mixing in a prior full year. This avoids the bias of comparing a 2026 AR balance
+// against 2025 revenue.
+const curY = TODAY_YEAR;
+    let nettoYtd2026 = 0, daysYtd2026 = 0;
+    for (let m = 1; m <= 12; m++) {
       if (pnlIsFutureMonth(curY, m)) continue;
-      const row = PNL_DATA.data[curY+'-'+m];
+      const row = PNL_DATA.data && PNL_DATA.data[curY+'-'+m];
       if (!row) continue;
-      hasAny = true;
-      const ebitda = (row['GP']||0) - (row['Total Biaya Entitas']||0);
-      const ebit = ebitda - (row['Depreciation & Amortization']||0);
-      const ebitMgmt = ebit - (row['Total Biaya Management']||0);
-      sum += ebitMgmt + (row['Pendapatan Lain']||0) - (row['Biaya Lain']||0);
+      nettoYtd2026 += row['Pendapatan Netto']||0;
+      daysYtd2026 += new Date(curY, m, 0).getDate();
     }
-    if (hasAny) npmYtd = sum;
+    const nettoAnnualized2026 = daysYtd2026 ? (nettoYtd2026/daysYtd2026*365) : null;
+    const dso2026 = (nettoAnnualized2026) ? (arTotal/nettoAnnualized2026*365) : null;
+    const TOP_DAYS = 45;
+
+    const liquidityRatio = apOverdue ? (saldoTersedia/apOverdue*100) : null;
+
+    let npmYtd = null;
+    if (PNL_DATA.data) {
+      const curY = TODAY_YEAR, curM = TODAY_MONTH;
+      let sum = 0, hasAny = false;
+      for (let m=1; m<=12; m++) {
+        if (pnlIsFutureMonth(curY, m)) continue;
+        const row = PNL_DATA.data[curY+'-'+m];
+        if (!row) continue;
+        hasAny = true;
+        const ebitda = (row['GP']||0) - (row['Total Biaya Entitas']||0);
+        const ebit = ebitda - (row['Depreciation & Amortization']||0);
+        const ebitMgmt = ebit - (row['Total Biaya Management']||0);
+        sum += ebitMgmt + (row['Pendapatan Lain']||0) - (row['Biaya Lain']||0);
+      }
+      if (hasAny) npmYtd = sum;
+    }
+
+    const scopeNote = kategoriFilter === 'ALL' ? '' : ` (filter: ${kategoriFilter === 'EKSTERNAL' ? 'Eksternal' : 'Internal'})`;
+
+    kpiRowEl.innerHTML = `
+      <div class="kpi">
+        <div class="label">DSO (Tahun Ini)${scopeNote}</div>
+        <div class="value"${dso2026!==null && dso2026>TOP_DAYS ? ' style="color:var(--red);"' : ''}>${dso2026!==null ? dso2026.toFixed(0)+' hari' : '—'}</div>
+        <div class="delta flat">${dso2026!==null ? (dso2026>TOP_DAYS ? (dso2026/TOP_DAYS).toFixed(1)+'x lebih lambat dari TOP '+TOP_DAYS+' hari' : (TOP_DAYS/dso2026).toFixed(1)+'x lebih cepat dari TOP '+TOP_DAYS+' hari') : '—'}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Likuiditas vs AP Overdue</div>
+        <div class="value" style="color:var(--red);">${liquidityRatio!==null ? liquidityRatio.toFixed(1)+'%' : '—'}</div>
+        <div class="delta flat">Saldo ${fmtRpCorr(saldoTersedia)} / AP Overdue ${fmtRpCorr(apOverdue)}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">NPM YTD vs Piutang Kronis${scopeNote}</div>
+        <div class="value"${npmYtd!==null && npmYtd<0 ? ' style="color:var(--red);"' : ''}>${npmYtd!==null ? fmtRpCorr(npmYtd) : '—'}</div>
+        <div class="delta flat">Piutang &gt;360 hari: ${fmtRpCorr(arChronic)}</div>
+      </div>
+    `;
+
+    const findings = [];
+
+    findings.push({
+      title: dso2026 !== null && dso2026 > TOP_DAYS
+        ? `DSO ${dso2026.toFixed(0)} hari — piutang ditagih ${(dso2026/TOP_DAYS).toFixed(1)}x lebih lambat dari kesepakatan`
+        : `DSO ${dso2026!==null?dso2026.toFixed(0):'?'} hari — piutang justru ditagih lebih cepat dari Term of Payment`,
+      desc: `DSO aktual tahun ini (${dso2026?dso2026.toFixed(0):'?'} hari, berbasis Pendapatan Netto ${curY} yang di-annualize) ${dso2026 !== null && dso2026 > TOP_DAYS ? 'jauh melampaui' : 'lebih singkat dari'} Term of Payment resmi ${TOP_DAYS} hari. ${dso2026 !== null && dso2026 > TOP_DAYS ? `Dalam siklus kas normal, piutang ${fmtRpCorr(arTotal)} ini seharusnya cair dalam waktu jauh lebih singkat. Selisih waktu inilah yang langsung menggerus Saldo Tersedia di Cash Management — kas yang seharusnya sudah masuk masih "tertahan" sebagai piutang.` : `Ini adalah praktik penagihan yang sehat untuk kategori piutang ini — kas dari piutang ${fmtRpCorr(arTotal)} cair lebih cepat dari kesepakatan, mendukung likuiditas secara umum.`}`
+    });
+
+    findings.push({
+      title: `Likuiditas kritis: Saldo Tersedia hanya ${liquidityRatio!==null?liquidityRatio.toFixed(1):'?'}% dari AP yang sudah jatuh tempo`,
+      desc: `Saldo Tersedia (${fmtRpCorr(saldoTersedia)}) jauh di bawah hutang yang sudah harus dibayar (${fmtRpCorr(apOverdue)}). Ini adalah konsekuensi langsung dari Collection Rate yang rendah di atas — kas yang macet di piutang berarti tidak tersedia untuk membayar kewajiban yang sudah jatuh tempo, menciptakan tekanan likuiditas ganda.`
+    });
+
+    if (kategoriFilter !== 'INTERNAL') {
+      findings.push({
+        title: `${arChronic?((arChronicInternal/arChronic)*100).toFixed(0):'?'}% dari piutang kronis (&gt;360 hari) adalah piutang internal grup`,
+        desc: `Dari total piutang kronis ${fmtRpCorr(arChronic)}, sebesar ${fmtRpCorr(arChronicInternal)} adalah piutang ke entitas internal Syaamil/Sygma sendiri. Ini berarti sebagian masalah "piutang macet" sebenarnya bukan soal penagihan ke customer eksternal, melainkan saldo intercompany yang belum diselesaikan secara administratif — perlu jalur penyelesaian berbeda dari piutang dagang biasa.`
+      });
+    } else {
+      findings.push({
+        title: `Piutang internal kronis (&gt;360 hari) mencapai ${fmtRpCorr(arChronicInternal)}`,
+        desc: `Dengan filter Internal aktif, seluruh ${fmtRpCorr(arChronicInternal)} piutang kronis di atas adalah saldo antar-entitas grup Syaamil/Sygma. Ini perlu diselesaikan lewat keputusan struktur permodalan/intercompany di level manajemen grup, bukan lewat jalur penagihan dagang biasa.`
+      });
+    }
+
+    findingsEl.innerHTML = findings.map((f,i) => `
+      <div class="ar-mgmt-finding-card">
+        <div class="fc-num">Temuan Kritis ${i+1}</div>
+        <div class="fc-title">${f.title}</div>
+        <div class="fc-desc">${f.desc}</div>
+      </div>
+    `).join('');
   }
 
-  // ---- KPI Row ----
-  kpiRowEl.innerHTML = `
-    <div class="kpi">
-      <div class="label">Collection Rate</div>
-      <div class="value"${collectionRate!==null && collectionRate<50 ? ' style="color:var(--red);"' : ''}>${collectionRate!==null ? collectionRate.toFixed(1)+'%' : '—'}</div>
-      <div class="delta flat">DSO ${dso2025?dso2025.toFixed(0):'—'} hari vs TOP ${TOP_DAYS} hari</div>
-    </div>
-    <div class="kpi">
-      <div class="label">Likuiditas vs AP Overdue</div>
-      <div class="value" style="color:var(--red);">${liquidityRatio!==null ? liquidityRatio.toFixed(1)+'%' : '—'}</div>
-      <div class="delta flat">Saldo ${fmtRpCorr(saldoTersedia)} / AP Overdue ${fmtRpCorr(apOverdue)}</div>
-    </div>
-    <div class="kpi">
-      <div class="label">NPM YTD vs Piutang Kronis</div>
-      <div class="value"${npmYtd!==null && npmYtd<0 ? ' style="color:var(--red);"' : ''}>${npmYtd!==null ? fmtRpCorr(npmYtd) : '—'}</div>
-      <div class="delta flat">Piutang &gt;360 hari: ${fmtRpCorr(arChronic)}</div>
-    </div>
-  `;
+  function renderCollectionTable(kategoriFilter, AR_ITEMS) {
+    const collectionTableEl = document.getElementById('arMgmtCollectionTable');
+    const insightEl = document.getElementById('arMgmtCollectionInsight');
+    if (!collectionTableEl || !window.__RAW__ || !window.__CP__ || !window.__EXTRA__) return;
+    const RAW_C = window.__RAW__;
+    const CP_C = window.__CP__;
+    const TIMELINE_C = window.__EXTRA__.piutang_timeline || {};
 
-  // ---- 3 Temuan Kritis ----
-  const findings = [];
+    function daysInMonth2026(m) { return new Date(2026, m, 0).getDate(); }
+    function outstandingAtMonthEnd(m) {
+      const lastDay = daysInMonth2026(m);
+      const targetDate = `2026-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+      const candidates = Object.keys(TIMELINE_C).filter(d => d <= targetDate).sort();
+      if (!candidates.length) return null;
+      const closest = candidates[candidates.length-1];
+      const t = TIMELINE_C[closest];
+      return { value: (t.Lama||0)+(t.Baru||0), asOfDate: closest };
+    }
 
-  findings.push({
-    title: `Collection Rate ${collectionRate!==null?collectionRate.toFixed(0):'?'}% — piutang ditagih ${dso2025?(dso2025/TOP_DAYS).toFixed(1):'?'}x lebih lambat dari kesepakatan`,
-    desc: `DSO aktual (${dso2025?dso2025.toFixed(0):'?'} hari) jauh melampaui Term of Payment resmi ${TOP_DAYS} hari. Dalam siklus kas normal, piutang Rp ${(arTotal/1e9).toFixed(1)} M ini seharusnya cair dalam waktu jauh lebih singkat. Selisih waktu inilah yang langsung menggerus Saldo Tersedia di Cash Management — kas yang seharusnya sudah masuk masih "tertahan" sebagai piutang.`
-  });
+    function cashInForMonth(m) {
+      return (CP_C.cashDaily||[]).filter(d => d.date.startsWith(`2026-${String(m).padStart(2,'0')}`))
+        .reduce((s,d) => s + (d.realCashIn||0), 0);
+    }
 
-  findings.push({
-    title: `Likuiditas kritis: Saldo Tersedia hanya ${liquidityRatio!==null?liquidityRatio.toFixed(1):'?'}% dari AP yang sudah jatuh tempo`,
-    desc: `Saldo Tersedia (${fmtRpCorr(saldoTersedia)}) jauh di bawah hutang yang sudah harus dibayar (${fmtRpCorr(apOverdue)}). Ini adalah konsekuensi langsung dari Collection Rate yang rendah di atas — kas yang macet di piutang berarti tidak tersedia untuk membayar kewajiban yang sudah jatuh tempo, menciptakan tekanan likuiditas ganda.`
-  });
+    function cashOutForMonth(m) {
+      return (CP_C.cashDaily||[]).filter(d => d.date.startsWith(`2026-${String(m).padStart(2,'0')}`))
+        .reduce((s,d) => s + (d.realCashOut||0), 0);
+    }
 
-  findings.push({
-    title: `${arChronic?((arChronicInternal/arChronic)*100).toFixed(0):'?'}% dari piutang kronis (&gt;360 hari) adalah piutang internal grup`,
-    desc: `Dari total piutang kronis ${fmtRpCorr(arChronic)}, sebesar ${fmtRpCorr(arChronicInternal)} adalah piutang ke entitas internal Syaamil/Sygma sendiri. Ini berarti sebagian masalah "piutang macet" sebenarnya bukan soal penagihan ke customer eksternal, melainkan saldo intercompany yang belum diselesaikan secara administratif — perlu jalur penyelesaian berbeda dari piutang dagang biasa.`
-  });
+    const currentTotal = AR_ITEMS_ALL_CORR.reduce((s,it)=>s+it.nominal,0);
+    const currentFilteredTotal = AR_ITEMS.reduce((s,it)=>s+it.nominal,0);
+    const approxRatio = (kategoriFilter !== 'ALL' && currentTotal) ? (currentFilteredTotal/currentTotal) : 1;
 
-  findingsEl.innerHTML = findings.map((f,i) => `
-    <div class="ar-mgmt-finding-card">
-      <div class="fc-num">Temuan Kritis ${i+1}</div>
-      <div class="fc-title">${f.title}</div>
-      <div class="fc-desc">${f.desc}</div>
-    </div>
-  `).join('');
+    const MONTH_NAMES_CR = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const rows = [];
+    for (let m = 1; m <= TODAY_MONTH; m++) {
+      const omRow = (RAW_C.monthly||[])[m-1];
+      if (!omRow) continue;
+      const penjualan = omRow.netto;
+      const cashIn = cashInForMonth(m);
+      const cashOut = cashOutForMonth(m);
+      const netCf = cashIn - cashOut;
+      const outstandingRaw = outstandingAtMonthEnd(m);
+      const outstanding = outstandingRaw ? { value: outstandingRaw.value*approxRatio, asOfDate: outstandingRaw.asOfDate } : null;
+      const cr = penjualan ? (cashIn/penjualan*100) : null;
+      rows.push({ month: m, label: MONTH_NAMES_CR[m-1], penjualan, cashIn, cashOut, netCf, outstanding, cr });
+    }
+
+    // YTD accumulation column: sums Penjualan/Cash In/Cash Out/Net CF across all months shown,
+    // and uses the LAST month's Outstanding snapshot (a balance, not something to sum).
+    const ytdPenjualan = rows.reduce((s,r)=>s+r.penjualan,0);
+    const ytdCashIn = rows.reduce((s,r)=>s+r.cashIn,0);
+    const ytdCashOut = rows.reduce((s,r)=>s+r.cashOut,0);
+    const ytdNetCf = ytdCashIn - ytdCashOut;
+    const ytdOutstanding = rows.length ? rows[rows.length-1].outstanding : null;
+    const ytdCr = ytdPenjualan ? (ytdCashIn/ytdPenjualan*100) : null;
+    const ytdRow = {
+      month: 'ytd', label: `Akumulasi YTD`, penjualan: ytdPenjualan, cashIn: ytdCashIn,
+      cashOut: ytdCashOut, netCf: ytdNetCf, outstanding: ytdOutstanding, cr: ytdCr
+    };
+
+    const metricDefs = [
+      { key:'penjualan', label:'Penjualan (Netto)' },
+      { key:'cashIn', label:'Cash In' },
+      { key:'cashOut', label:'Cash Out' },
+      { key:'netCf', label:'Net Cash Flow' },
+      { key:'outstanding', label:'Outstanding Akhir Bulan' },
+      { key:'cr', label:'Collection Rate' },
+    ];
+    const thead = '<tr><th>Komponen</th>' + rows.map(r=>`<th data-mgmtkey="${r.month}" class="ar-mgmt-clickable-th">${r.label} 2026</th>`).join('') + '<th style="background:#3D6396;">Akumulasi YTD</th></tr>';
+    function renderCell(md, r, isYtd) {
+      const ytdStyle = isYtd ? 'background:var(--panel-2);font-weight:700;' : '';
+      if (md.key === 'outstanding') {
+        const exactEom = r.month==='ytd' ? null : `2026-${String(r.month).padStart(2,'0')}-${String(daysInMonth2026(r.month)).padStart(2,'0')}`;
+        const proxyNote = (r.outstanding && exactEom && r.outstanding.asOfDate !== exactEom) ? ` <span style="color:var(--ink-faint);font-size:9px;display:block;">(per ${r.outstanding.asOfDate})</span>` : (isYtd && r.outstanding ? ` <span style="color:var(--ink-faint);font-size:9px;display:block;">(saldo per ${r.outstanding.asOfDate})</span>` : '');
+        return `<td style="${ytdStyle}" data-sort-value="${r.outstanding?r.outstanding.value:''}">${r.outstanding?fmtRpCorr(r.outstanding.value):'—'}${proxyNote}</td>`;
+      }
+      if (md.key === 'cr') {
+        const crCls = r.cr === null ? '' : (r.cr >= 90 ? 'yoy-pos' : (r.cr >= 60 ? '' : 'yoy-neg'));
+        return `<td class="${crCls}" style="font-weight:700;${ytdStyle}" data-sort-value="${r.cr===null?'':r.cr}">${r.cr===null?'—':r.cr.toFixed(1)+'%'}</td>`;
+      }
+      if (md.key === 'netCf') {
+        const negCls = r.netCf < 0 ? 'neg' : '';
+        return `<td class="${negCls}" style="${ytdStyle}" data-sort-value="${r.netCf}">${r.netCf<0?'-':''}${fmtRpCorr(Math.abs(r.netCf))}</td>`;
+      }
+      return `<td style="${ytdStyle}" data-sort-value="${r[md.key]}">${fmtRpCorr(r[md.key])}</td>`;
+    }
+    const tbody = metricDefs.map(md => {
+      const cells = rows.map(r => renderCell(md, r, false)).join('') + renderCell(md, ytdRow, true);
+      return `<tr><td>${md.label}</td>${cells}</tr>`;
+    }).join('');
+    collectionTableEl.innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
+
+    collectionTableEl.querySelectorAll('th.ar-mgmt-clickable-th').forEach(th => {
+      th.style.cursor = 'pointer';
+      th.addEventListener('click', () => {
+        const m = parseInt(th.dataset.mgmtkey, 10);
+        const rowData = rows.find(r => r.month === m);
+        if (!rowData || !rowData.outstanding) return;
+        const mgmtModalOverlay2 = document.getElementById('arMgmtModalOverlay');
+        document.getElementById('arMgmtModalTitle').textContent = `Collection Rate — ${rowData.label} 2026`;
+        document.getElementById('arMgmtModalSub').textContent = `Outstanding per snapshot ${rowData.outstanding.asOfDate}${kategoriFilter!=='ALL'?' (estimasi proporsional filter '+kategoriFilter+')':''}`;
+        document.getElementById('arMgmtModalKpi').innerHTML = `
+          <div class="ar-modal-kpi-item"><div class="lbl">Penjualan</div><div class="val">${fmtRpCorr(rowData.penjualan)}</div></div>
+          <div class="ar-modal-kpi-item"><div class="lbl">Cash In</div><div class="val">${fmtRpCorr(rowData.cashIn)}</div></div>
+          <div class="ar-modal-kpi-item"><div class="lbl">Collection Rate</div><div class="val">${rowData.cr===null?'—':rowData.cr.toFixed(1)+'%'}</div></div>
+        `;
+        document.getElementById('arMgmtModalHead').innerHTML = '<th>Komponen</th><th>Nilai</th>';
+        document.getElementById('arMgmtModalBody').innerHTML = `
+          <tr><td>Penjualan (Netto) ${rowData.label} 2026</td><td>${fmtRpCorr(rowData.penjualan)}</td></tr>
+          <tr><td>Cash In ${rowData.label} 2026</td><td>${fmtRpCorr(rowData.cashIn)}</td></tr>
+          <tr><td>Outstanding AR per ${rowData.outstanding.asOfDate}</td><td>${fmtRpCorr(rowData.outstanding.value)}</td></tr>
+          <tr><td>Collection Rate</td><td>${rowData.cr===null?'—':rowData.cr.toFixed(1)+'%'} (Cash In &divide; Penjualan)</td></tr>
+        `;
+        if (mgmtModalOverlay2) mgmtModalOverlay2.classList.add('open');
+      });
+    });
+
+    if (insightEl) {
+      const validRows = rows.filter(r => r.cr !== null);
+      const avgCr = validRows.length ? validRows.reduce((s,r)=>s+r.cr,0)/validRows.length : null;
+      const best = validRows.length ? validRows.reduce((a,b)=>b.cr>a.cr?b:a, validRows[0]) : null;
+      const worst = validRows.length ? validRows.reduce((a,b)=>b.cr<a.cr?b:a, validRows[0]) : null;
+      const firstOutstanding = rows.find(r=>r.outstanding);
+      const lastOutstanding = [...rows].reverse().find(r=>r.outstanding);
+      const outstandingTrend = (firstOutstanding && lastOutstanding && firstOutstanding!==lastOutstanding)
+        ? (lastOutstanding.outstanding.value < firstOutstanding.outstanding.value ? 'menurun' : 'meningkat')
+        : null;
+
+      // Net Cash Flow analysis: months where Collection Rate > 100% but Net CF is still negative
+      // reveal that AR collections are being drawn down to cover an operating cash shortfall,
+      // not building up liquidity.
+      const monthsNegCf = rows.filter(r => r.netCf < 0);
+      const monthsHighCrNegCf = rows.filter(r => r.cr !== null && r.cr > 100 && r.netCf < 0);
+      const allMonthsNegCf = monthsNegCf.length === rows.length && rows.length > 0;
+      const arDrawdownMonths = rows.filter((r,i) => i > 0 && r.outstanding && rows[i-1].outstanding && r.outstanding.value < rows[i-1].outstanding.value);
+
+      const approxNote = kategoriFilter !== 'ALL'
+        ? `<p style="font-size:11.5px;color:var(--ink-faint);font-style:italic;">Catatan: Penjualan &amp; Cash In/Out bersifat system-wide (tidak terbagi eksternal/internal pada sumber datanya). Outstanding pada filter ini adalah <b>estimasi proporsional</b> berdasarkan rasio kategori saat ini, bukan pemecahan historis presisi per bulan.</p>`
+        : '';
+
+      insightEl.innerHTML = `
+        <p><span class="pti-tag">Executive Summary</span>Rata-rata Collection Rate Jan&ndash;${rows[rows.length-1]?rows[rows.length-1].label:'-'} 2026 adalah <b>${avgCr!==null?avgCr.toFixed(1)+'%':'—'}</b> (akumulasi YTD: <b>${ytdRow.cr!==null?ytdRow.cr.toFixed(1)+'%':'—'}</b>). Bulan terbaik <b>${best?best.label:'—'}</b> (${best?best.cr.toFixed(1)+'%':'—'}), bulan terlemah <b>${worst?worst.label:'—'}</b> (${worst?worst.cr.toFixed(1)+'%':'—'}).${outstandingTrend?` Outstanding akhir bulan secara umum <b>${outstandingTrend}</b> sepanjang periode ini, dari ${fmtRpCorr(firstOutstanding.outstanding.value)} menjadi ${fmtRpCorr(lastOutstanding.outstanding.value)}.`:''}</p>
+        <p><b>Collection Rate tinggi tidak berarti kas sehat.</b> ${allMonthsNegCf ? `Net Cash Flow tercatat <b style="color:var(--red);">negatif di seluruh ${rows.length} bulan</b> yang ditampilkan` : `Net Cash Flow negatif terjadi di ${monthsNegCf.length} dari ${rows.length} bulan`} (Cash In selalu lebih kecil dari Cash Out).${monthsHighCrNegCf.length > 0 ? ` Pada bulan ${monthsHighCrNegCf.map(r=>r.label).join(', ')}, Collection Rate di atas 100% <b>tetap diiringi Net Cash Flow negatif</b> — artinya kas yang masuk dari pelunasan piutang lama belum cukup menutupi Cash Out bulan itu.` : ''}</p>
+        <p><b>Implikasi terhadap likuiditas AR:</b> Outstanding akhir bulan ${outstandingTrend === 'menurun' ? `terus <b>menurun</b> (turun di ${arDrawdownMonths.length} dari ${rows.length-1} transisi bulan yang tercatat)` : 'bergerak'} sepanjang periode ini, sementara Net Cash Flow tetap negatif setiap bulan. Pola ini menunjukkan piutang sedang <b>"dimakan" (drawdown) untuk menambal defisit kas operasional bulanan</b> — bukan dijaga sebagai cadangan atau tumbuh dari penjualan baru. Selama Cash Out terus melebihi Cash In, stok piutang yang bisa dikonversi inilah satu-satunya buffer; begitu piutang yang realistis ditagih menipis (terutama karena ${ytdRow ? 'mayoritas piutang sudah berstatus kronis, lihat Severity Keterlambatan di atas' : 'piutang kronis terus bertambah'}), defisit ini tidak akan lagi punya penyangga.</p>
+        ${approxNote}
+      `;
+    }
+  }
+
+  function renderCorrelationSection(kategoriFilter, AR_ITEMS) {
+    renderKpiAndFindings(kategoriFilter, AR_ITEMS);
+    renderCollectionTable(kategoriFilter, AR_ITEMS);
+  }
+
+  window.__renderArMgmtCorrelation = renderCorrelationSection;
+
+  renderCorrelationSection('ALL', AR_ITEMS_ALL_CORR);
 })();
 
 // ============ YoY ANALYSIS (sub-tab) ============
