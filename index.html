@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 07:00 WIB | Tambah menu baru Balance Sheet (di bawah P&L): KPI, donut Liabilitas&Ekuitas, tabel Aset/Liabilitas/Ekuitas klik-untuk-tren -->
+<!-- BUILD: 2026-06-28 08:30 WIB | Hapus menu Balance Sheet dari UI; tambah Collection Rate + 3 Temuan Kritis (korelasi AR-Cash-AP-PNL) di AR Management -->
 
 <html lang="id">
 <head>
@@ -841,6 +841,13 @@
   #dash-ar .pnl-table-insight b { color:var(--ink); }
 
   #dash-ar .ar-mgmt-severity-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  #dash-ar .ar-mgmt-findings-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  #dash-ar .ar-mgmt-finding-card { background:var(--panel-2); border-radius:8px; padding:18px 20px; border-top:3px solid var(--red); }
+  #dash-ar .ar-mgmt-finding-card .fc-num { font-family:var(--mono); font-size:11px; color:var(--red); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; }
+  #dash-ar .ar-mgmt-finding-card .fc-title { font-family:var(--serif); font-size:15px; font-weight:700; color:var(--ink); margin-bottom:8px; line-height:1.35; }
+  #dash-ar .ar-mgmt-finding-card .fc-desc { font-size:12.5px; color:var(--ink-dim); line-height:1.55; }
+  #dash-ar .ar-mgmt-finding-card .fc-desc b { color:var(--ink); }
+  @media (max-width:900px) { #dash-ar .ar-mgmt-findings-grid { grid-template-columns:1fr; } }
   #dash-ar .ar-mgmt-clickable { cursor:pointer; }
   #dash-ar .btn-secondary { font-family:var(--mono); font-size:12px; padding:8px 18px; border-radius:6px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-dim); cursor:pointer; transition:all .15s; }
   #dash-ar .btn-secondary:hover { border-color:var(--gold); color:var(--gold); }
@@ -893,73 +900,6 @@
   #dash-ar .ar-modal-table th.num, #dash-ar .ar-modal-table td.num { text-align:right; }
   #dash-ar .ar-modal-table td { padding:7px 8px; border-bottom:1px solid rgba(58,53,48,0.06); white-space:nowrap; }
   #dash-ar .ar-modal-table tr.overdue td { color:var(--red); }
-
-  /* ============ BALANCE SHEET ============ */
-  #dash-bs {
-    --bg: #FFFFFF; --panel: #FFFFFF; --panel-2: #F2F4F7; --line: #DDE3EC;
-    --ink: #1A1A2E; --ink-dim: #5A6478; --ink-faint: #9AA5B8;
-    --gold: #4A7AB9; --gold-dim: #8FB3DD; --green: #7CA582; --green-bg: #E7EFE6;
-    --red: #C97A6B; --red-bg: #F6E8E4; --amber: #D9A24A; --amber-bg: #FBF0DD; --blue: #7B96A8;
-    --mono: Arial, Helvetica, 'Segoe UI', sans-serif;
-    --serif: Arial, Helvetica, 'Segoe UI', sans-serif; --sans: Arial, Helvetica, 'Segoe UI', sans-serif;
-  }
-  #dash-bs * { box-sizing:border-box; }
-  #dash-bs { margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans); }
-  #dash-bs .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden; }
-  #dash-bs .kpi { background:var(--panel); padding:18px 16px; }
-  #dash-bs .kpi .label { font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-faint); margin-bottom:8px; }
-  #dash-bs .kpi .value { font-family:var(--serif); font-size:21px; font-weight:600; color:var(--ink); margin-bottom:4px; }
-  #dash-bs .kpi .delta { font-family:var(--mono); font-size:11px; }
-  #dash-bs .kpi .delta.pos { color:var(--green); }
-  #dash-bs .kpi .delta.neg { color:var(--red); }
-  #dash-bs .kpi .delta.flat { color:var(--ink-faint); }
-  #dash-bs .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:24px; box-shadow:0 2px 14px rgba(58,53,48,0.05); }
-  #dash-bs table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  #dash-bs thead th {
-    text-align:right; font-size:12px; letter-spacing:0.02em; text-transform:uppercase;
-    color:#fff; font-weight:700; padding:9px 10px; border-bottom:1px solid var(--line);
-    white-space:nowrap; background:var(--gold);
-  }
-  #dash-bs thead th:first-child { text-align:left; position:sticky; left:0; background:var(--gold); z-index:2; }
-  #dash-bs tbody td { padding:7px 10px; border-bottom:1px solid rgba(58,53,48,0.05); text-align:right; color:var(--ink); white-space:nowrap; }
-  #dash-bs tbody td:first-child { text-align:left; font-weight:500; position:sticky; left:0; background:var(--panel); }
-  #dash-bs tbody tr.bs-subtotal td { font-weight:700; background:var(--panel-2); color:var(--ink); }
-  #dash-bs tbody tr.bs-subtotal td:first-child { background:var(--panel-2); }
-  #dash-bs tbody tr.bs-grandtotal td { font-weight:700; background:var(--gold); color:#fff; }
-  #dash-bs tbody tr.bs-grandtotal td:first-child { background:var(--gold); }
-  #dash-bs tbody tr.bs-clickable { cursor:pointer; }
-  #dash-bs tbody tr.bs-clickable:hover td { background:rgba(74,122,185,0.07); }
-  #dash-bs tbody tr.bs-clickable:hover td:first-child { background:rgba(74,122,185,0.10); }
-  #dash-bs .neg { color:var(--red); }
-  #dash-bs .pnl-chart-box { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px 18px 12px; box-shadow:0 2px 14px rgba(58,53,48,0.05); }
-  #dash-bs .pnl-chart-box-wide canvas { height:280px !important; }
-  #dash-bs .pnl-donut-wrap { position:relative; height:280px; }
-  #dash-bs .pnl-donut-wrap canvas { width:100% !important; height:280px !important; }
-  #dash-bs .ar-modal-overlay {
-    display:none; position:fixed; inset:0; background:rgba(58,53,48,0.45); backdrop-filter:blur(2px);
-    z-index:1000; align-items:center; justify-content:center; padding:20px;
-  }
-  #dash-bs .ar-modal-overlay.open { display:flex; }
-  #dash-bs .ar-modal {
-    background:var(--panel); border-radius:10px; max-width:820px; width:100%; max-height:85vh;
-    overflow-y:auto; box-shadow:0 12px 40px rgba(58,53,48,0.25); padding:24px;
-  }
-  #dash-bs .ar-modal-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
-  #dash-bs .ar-modal-title { font-family:var(--serif); font-size:19px; font-weight:600; }
-  #dash-bs .ar-modal-sub { font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:4px; }
-  #dash-bs .ar-modal-close { background:none; border:none; font-size:24px; color:var(--ink-faint); cursor:pointer; line-height:1; padding:0 4px; }
-  #dash-bs .ar-modal-close:hover { color:var(--ink); }
-  #dash-bs .ar-modal-kpi { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; }
-  #dash-bs .ar-modal-kpi-item { background:var(--panel-2); border-radius:6px; padding:10px 12px; }
-  #dash-bs .ar-modal-kpi-item .lbl { font-family:var(--mono); font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; margin-bottom:4px; }
-  #dash-bs .ar-modal-kpi-item .val { font-family:var(--serif); font-size:15px; font-weight:600; }
-  #dash-bs .ar-modal-table-wrap { overflow-x:auto; max-height:50vh; overflow-y:auto; }
-  #dash-bs .ar-modal-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12px; }
-  #dash-bs .ar-modal-table th { position:sticky; top:0; background:var(--gold); color:#fff; font-weight:700; font-size:11px; text-transform:uppercase; padding:8px; text-align:left; white-space:nowrap; }
-  #dash-bs .ar-modal-table td { padding:7px 8px; border-bottom:1px solid rgba(58,53,48,0.06); white-space:nowrap; text-align:right; }
-  #dash-bs .ar-modal-table td:first-child { text-align:left; }
-  #dash-bs footer { text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:40px; }
-  @media (max-width:700px) { #dash-bs .kpi-row { grid-template-columns:1fr; } }
 
   /* ============ DASHBOARD 4: AP / HUTANG ============ */
   #dash-ap {
@@ -1658,7 +1598,6 @@
       <button class="shell-nav-btn active" data-page="dash-overview"><span class="ic"></span>Overview</button>
       <button class="shell-nav-btn" data-page="dash-budget"><span class="ic"></span>Revenue Performance</button>
       <button class="shell-nav-btn" data-page="dash-pnl"><span class="ic"></span>Profit &amp; Loss</button>
-      <button class="shell-nav-btn" data-page="dash-bs"><span class="ic"></span>Balance Sheet</button>
       <button class="shell-nav-btn" data-page="dash-cashmgmt"><span class="ic"></span>Cash Management</button>
       <button class="shell-nav-btn" data-page="dash-analysis"><span class="ic"></span>Analysis Sales Order</button>
       <button class="shell-nav-btn" data-page="dash-ar"><span class="ic"></span>AR / Piutang SEA</button>
@@ -2144,97 +2083,6 @@
 
   <footer>Dashboard dibuat otomatis dari data Laba Rugi SEA · Syaamil Group FP&amp;A</footer>
 </div>
-    </div>
-  </div>
-
-  <div class="shell-page" id="page-dash-bs">
-    <div id="dash-bs">
-      <div class="wrap">
-
-  <div class="masthead">
-    <div class="masthead-left">
-      <p class="eyebrow">Syaamil Group · Financial Planning &amp; Analysis</p>
-      <h1>Balance Sheet — Entitas SEA</h1>
-      <p class="sub">Laporan Posisi Keuangan: Aset, Liabilitas &amp; Ekuitas, acuan kolom Laporan Bulanan</p>
-    </div>
-    <div class="masthead-right">
-      <div class="asof">Data per <span id="bsAsOfDate" style="color:var(--gold)"></span></div>
-      <div>Sumber: Dataset LK — LPK SEA</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <h2>Ringkasan Posisi Keuangan</h2>
-      <span class="note">akumulasi per kategori utama &middot; nilai dalam Jutaan Rupiah</span>
-    </div>
-    <div class="kpi-row" id="bsKpiRow" style="grid-template-columns:repeat(3,1fr);"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <h2>Komposisi Liabilitas &amp; Ekuitas</h2>
-      <span class="note">proporsi sumber pendanaan SEA &middot; klik segmen untuk rincian</span>
-    </div>
-    <div class="pnl-chart-box pnl-chart-box-wide">
-      <div class="pnl-donut-wrap" style="height:280px;">
-        <canvas id="bsLiabEquityDonut"></canvas>
-        <div class="pnl-donut-center" id="bsLiabEquityDonutCenter" style="display:none;"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <h2>Aset</h2>
-      <span class="note">Aset Lancar &amp; Aset Tetap &middot; klik baris untuk lihat tren bulanan akun tersebut</span>
-    </div>
-    <div class="panel" style="padding:0;overflow-x:auto;">
-      <table id="bsAsetTable" style="width:100%;border-collapse:collapse;"></table>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <h2>Liabilitas</h2>
-      <span class="note">Liabilitas Lancar &amp; Liabilitas Tidak Lancar &middot; klik baris untuk lihat tren bulanan akun tersebut</span>
-    </div>
-    <div class="panel" style="padding:0;overflow-x:auto;">
-      <table id="bsLiabilitasTable" style="width:100%;border-collapse:collapse;"></table>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <h2>Ekuitas</h2>
-      <span class="note">klik baris untuk lihat tren bulanan akun tersebut</span>
-    </div>
-    <div class="panel" style="padding:0;overflow-x:auto;">
-      <table id="bsEkuitasTable" style="width:100%;border-collapse:collapse;"></table>
-    </div>
-  </div>
-
-  <div class="ar-modal-overlay" id="bsModalOverlay">
-    <div class="ar-modal">
-      <div class="ar-modal-head">
-        <div>
-          <div class="ar-modal-title" id="bsModalTitle"></div>
-          <div class="ar-modal-sub" id="bsModalSub"></div>
-        </div>
-        <button class="ar-modal-close" id="bsModalClose">&times;</button>
-      </div>
-      <div class="ar-modal-kpi" id="bsModalKpi"></div>
-      <div class="ar-modal-table-wrap">
-        <table class="ar-modal-table">
-          <thead><tr id="bsModalHead"></tr></thead>
-          <tbody id="bsModalBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <footer>Dashboard dibuat otomatis dari data LK — LPK SEA · Syaamil Group FP&amp;A</footer>
-      </div>
     </div>
   </div>
 
@@ -3095,6 +2943,15 @@
   </div>
 
   <div id="arView-mgmt" class="ar-view" style="display:none;">
+
+  <div class="section">
+    <div class="section-head">
+      <h2>Collection Rate &amp; Korelasi Lintas Data</h2>
+      <span class="note">analisis silang dengan Cash Management, AP, dan Profit &amp; Loss</span>
+    </div>
+    <div class="kpi-row" id="arMgmtCorrKpiRow" style="grid-template-columns:repeat(3,1fr);"></div>
+    <div class="ar-mgmt-findings-grid" id="arMgmtFindingsGrid" style="margin-top:18px;"></div>
+  </div>
 
   <div class="section">
     <div class="section-head">
@@ -11060,233 +10917,7 @@ if (AP_ITEMS && AP_ITEMS.length) {
 </script>
 
 
-<script>
-// ============ BALANCE SHEET PAGE ============
-const BS_DATA = {"accounts":[{"code":"36.892","label":"Kas Holding","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"37.257","label":"Kas SBU PUB Pusat","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"38.353","label":"Kas SBU PUB Jkt","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"38.718","label":"Kas SBU PUB Bdg","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"39.083","label":"Kas SBU PUB Yog","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"39.448","label":"Kas SBU PUB Sby","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"41.640","label":"Kas Kecil SBU PUB Pusat","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"42.736","label":"Kas Kecil SBU PUB Jkt","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"43.101","label":"Kas Kecil SBU PUB Bdg","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"43.466","label":"Kas Kecil SBU PUB Yog","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"43.831","label":"Kas Kecil SBU PUB Sby","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"45.658","label":"Kas SBU PUB Medan","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"46.023","label":"Kas Kecil SBU PUB Medan","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"46.753","label":"Kas SBU PUB Banten","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"11.689","label":"Kas SBU PUB Palembang","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"12.055","label":"Kas Kecil SBU PUB Palembang","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"46.388","label":"Kas Bank","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"47.119","label":"Kas Kecil SBU PUB Banten","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"10.959","label":"Kas Task Force","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"36.923","label":"Kas US Dollar","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.001","label":"Bank Muamalat Indonesia","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.002","label":"BSM Printing 281 / 7697","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.003","label":"BSM Publishing Pusat 277 / 7689","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.004","label":"BCA Publising Bandung 161","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.005","label":"BCA Publishing Jakarta 952","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.006","label":"BCA Publishing Surabaya 063","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.007","label":"Mandiri Publishing dan SDI Yoyakarta 093","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.008","label":"BSM SDI Pusat 263 / 7678","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.009","label":"Bank BCA SEA Banten 9166","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.010","label":"Mandiri SDI Bandung 414","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.012","label":"BNI 471","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.014","label":"BCA SDI Pusat 151","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.015","label":"Mandiri 867","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.016","label":"Mandiri USD 570","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.017","label":"BSM SDI Pusat 992 / 4651","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.018","label":"BSM 221 / 8851","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.019","label":"BRIS 384","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.020","label":"Mandiri 707","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.021","label":"Mandiri 709","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.022","label":"BCA 123","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.023","label":"BNI Syariah 940","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.025","label":"BCA Syariah 024","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.026","label":"BCA Syariah 171","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.027","label":"BSI 325","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.028","label":"BCA Syariah 888","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.044","label":"CIMB Niaga Syariah 4300","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.045","label":"BRI 306","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.21.047","label":"CIMB Niaga Syariah 7200","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.23.001","label":"Emas 24K","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.31.001","label":"Ayat Silang","section":"Current Asset","sectionKey":"aset_lancar","group":"Kas & Bank","subgroup":"Cash & Bank"},{"code":"1.41.001","label":"Piutang Dagang Publishing","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Dagang","subgroup":"Receivables"},{"code":"1.41.006","label":"Piutang Lain - lain","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Lain","subgroup":"Receivables"},{"code":"1.41.008","label":"Piutang - PT Sygma Exa Grafika","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Lain","subgroup":"Receivables"},{"code":"1.41.009","label":"Piutang - PT Sygma Daya Insani","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Lain","subgroup":"Receivables"},{"code":"1.41.010","label":"Piutang - PT Sygma Media Inovasi","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Lain","subgroup":"Receivables"},{"code":"1.41.014","label":"Piutang DSM","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Lain","subgroup":"Receivables"},{"code":"1.41.015","label":"Piutang Reimbursement","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Lain","subgroup":"Receivables"},{"code":"1.42.001","label":"Cadangan Kerugian Piutang","section":"Current Asset","sectionKey":"aset_lancar","group":"Piutang Dagang","subgroup":"Receivables"},{"code":"1.44.001","label":"Persediaan Barang Dalam Proses (WIP)","section":"Current Asset","sectionKey":"aset_lancar","group":"Persediaan","subgroup":"Inventory"},{"code":"1.45.002","label":"Persediaan Barang Jadi Publising","section":"Current Asset","sectionKey":"aset_lancar","group":"Persediaan","subgroup":"Inventory"},{"code":"1.45.003","label":"Persediaan Barang Jadi SDI","section":"Current Asset","sectionKey":"aset_lancar","group":"Persediaan","subgroup":"Inventory"},{"code":"1.45.004","label":"Persediaan Barang Jadi","section":"Current Asset","sectionKey":"aset_lancar","group":"Persediaan","subgroup":"Inventory"},{"code":"1.49.001","label":"Perlengkapan kantor","section":"Current Asset","sectionKey":"aset_lancar","group":"Persediaan","subgroup":"Inventory"},{"code":"1.51.001","label":"Asuransi dibayar dimuka","section":"Current Asset","sectionKey":"aset_lancar","group":"Biaya Dibayar Dimuka","subgroup":"Other Current Asset"},{"code":"1.51.002","label":"Sewa gedung dibayar dimuka","section":"Current Asset","sectionKey":"aset_lancar","group":"Biaya Dibayar Dimuka","subgroup":"Other Current Asset"},{"code":"1.51.005","label":"Biaya Dibayar Dimuka","section":"Current Asset","sectionKey":"aset_lancar","group":"Biaya Dibayar Dimuka","subgroup":"Other Current Asset"},{"code":"1.51.006","label":"Pengeluaran Sementara","section":"Current Asset","sectionKey":"aset_lancar","group":"Pengeluaran Sementara","subgroup":"Other Current Asset"},{"code":"1.52.001","label":"Pajak dibayar dimuka","section":"Current Asset","sectionKey":"aset_lancar","group":"Biaya Dibayar Dimuka","subgroup":"Other Current Asset"},{"code":"1.52.002","label":"PPN Masukan","section":"Current Asset","sectionKey":"aset_lancar","group":"Biaya Dibayar Dimuka","subgroup":"Other Current Asset"},{"code":"1.53.001","label":"Pembayaran Uang Muka","section":"Current Asset","sectionKey":"aset_lancar","group":"Biaya Dibayar Dimuka","subgroup":"Other Current Asset"},{"code":"1.54.001","label":"Investasi pada  PT Sygma Exa Grafika","section":"Current Asset","sectionKey":"aset_lancar","group":"Investasi","subgroup":"Other Current Asset"},{"code":"1.54.002","label":"Investasi Pada PT. MAC","section":"Current Asset","sectionKey":"aset_lancar","group":"Investasi","subgroup":"Other Current Asset"},{"code":"1.54.004","label":"Investasi pada PT SDI","section":"Current Asset","sectionKey":"aset_lancar","group":"Investasi","subgroup":"Other Current Asset"},{"code":"1.54.005","label":"Investasi pada PT SMI","section":"Current Asset","sectionKey":"aset_lancar","group":"Investasi","subgroup":"Other Current Asset"},{"code":"1.61.001","label":"Tanah","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Tanah","subgroup":"Land"},{"code":"1.62.001","label":"Bangunan","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Bangunan","subgroup":"Building"},{"code":"1.63.001","label":"Mesin","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Mesin","subgroup":"Machine"},{"code":"1.64.001","label":"Kendaraan","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Kendaraan","subgroup":"Vehicle"},{"code":"1.65.001","label":"Peralatan Kantor","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Peralatan Kantor","subgroup":"Equipment"},{"code":"1.66.001","label":"Peralatan Produksi","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Peralatan Produksi","subgroup":"Equipment"},{"code":"1.67.001","label":"Peralatan Pameran","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Peralatan Pameran","subgroup":"Equipment"},{"code":"1.71.001","label":"Akumulasi penyusutan Bangunan","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Akumulasi Penyusutan","subgroup":"Depreciation"},{"code":"1.71.002","label":"Akumulasi penyusutan Mesin","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Akumulasi Penyusutan","subgroup":"Depreciation"},{"code":"1.71.003","label":"Akumulasi penyusutan Kendaraan","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Akumulasi Penyusutan","subgroup":"Depreciation"},{"code":"1.71.004","label":"Akumulasi penyusutan Peralatan Kantor","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Akumulasi Penyusutan","subgroup":"Depreciation"},{"code":"1.71.005","label":"Akumulasi penyusutan Peralatan Pameran","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Akumulasi Penyusutan","subgroup":"Depreciation"},{"code":"1.71.006","label":"Akumulasi Penyusutan Peralatan Produksi","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Akumulasi Penyusutan","subgroup":"Depreciation"},{"code":"1.82.001","label":"Hak Cipta","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Aset Tidak Berwujud","subgroup":"Intangibles"},{"code":"1.83.001","label":"Licensi","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Aset Tidak Berwujud","subgroup":"Intangibles"},{"code":"1.83.002","label":"Merk Dagang","section":"Non Current Asset","sectionKey":"aset_tetap","group":"Aset Tidak Berwujud","subgroup":"Intangibles"},{"code":"36.893","label":"Hutang Barang Jadi","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"36.924","label":"Hutang Cetakan","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"37.289","label":"Hutang Bahan Baku","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"37.654","label":"Hutang Bahan Penolong","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"36.952","label":"Hutang Konsinyasi","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"36.983","label":"Hutang Investasi","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"37.013","label":"PPN Keluaran","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pajak","subgroup":"Other Payables"},{"code":"37.378","label":"PPH 21","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pajak","subgroup":"Other Payables"},{"code":"37.743","label":"PPH 23","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pajak","subgroup":"Other Payables"},{"code":"38.474","label":"PPH 4/2","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pajak","subgroup":"Other Payables"},{"code":"38.839","label":"Hutang PPh Badan","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pajak","subgroup":"Other Payables"},{"code":"37.044","label":"Hutang Royalti","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Royalti, Komisi dan Bonus","subgroup":"Payables"},{"code":"37.074","label":"Hutang Komisi dan Bonus","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Royalti, Komisi dan Bonus","subgroup":"Other Payables"},{"code":"37.105","label":"Pendapatan di terima dimuka","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pendapatan di terima dimuka","subgroup":"Other Payables"},{"code":"37.501","label":"Biaya yg masih Harus di bayar - Listrik","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Other Payables"},{"code":"37.866","label":"Biaya yg masih harus di bayar - Telepon","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Other Payables"},{"code":"37.166","label":"Hutang Lain-lain","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"37.197","label":"Hutang Leasing","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"37.227","label":"PO Receipt","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"PO Receipt","subgroup":"Payables"},{"code":"37.592","label":"Penerimaan sementara","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Pendapatan di terima dimuka","subgroup":"Other Payables"},{"code":"2.14.003","label":"Hutang Holding - SDI","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"2.14.004","label":"Hutang Holding - SMI","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"2.14.005","label":"Hutang Holding - SEG","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"2.14.006","label":"Hutang Deviden","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Lain-lain","subgroup":"Other Payables"},{"code":"2.15.001","label":"Hutang ATK dan Umum","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"2.18.001","label":"Hutang Operasional","section":"Current Liabilities","sectionKey":"liabilitas_lancar","group":"Hutang Dagang","subgroup":"Payables"},{"code":"2.41.001","label":"Hutang Bank","section":"Long Term Debt","sectionKey":"liabilitas_panjang","group":"Hutang Bank","subgroup":"Long Term Debt"},{"code":"37.167","label":"Modal Disetor","section":"Equities","sectionKey":"ekuitas","group":"Modal","subgroup":"Common Equity"},{"code":"3.20.001","label":"Laba Ditahan","section":"Equities","sectionKey":"ekuitas","group":"Laba Ditahan","subgroup":"Detained Earnings"},{"code":"3.30.001","label":"Laba Berjalan","section":"Equities","sectionKey":"ekuitas","group":"Laba Berjalan","subgroup":"Retained Earnings"},{"code":"3.40.001","label":"Prive","section":"Equities","sectionKey":"ekuitas","group":"Prive","subgroup":""}],"years":[2024,2025,2026],"data":{"2024-12":{"36.892":0.0,"37.257":20417500.0,"38.353":300000.0,"38.718":7181600.0,"39.083":2805500.0,"39.448":0.0,"41.640":1655700.0,"42.736":1965597.0,"43.101":398504.0,"43.466":2138231.0,"43.831":2647737.0,"45.658":3882700.0,"46.023":372300.0,"46.753":0.0,"11.689":162762.0,"12.055":9094504.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7588990.0,"1.21.002":0.0,"1.21.003":360870175.0,"1.21.004":20761504.0,"1.21.005":16179202.0,"1.21.006":19117432.0,"1.21.007":3542426.0,"1.21.008":0.0,"1.21.009":19535558.0,"1.21.010":12622493.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":16774322.0,"1.21.016":0.0,"1.21.017":872241.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":6306288.0,"1.21.023":629133.0,"1.21.025":2250236.0,"1.21.026":0.0,"1.21.027":3536049.0,"1.21.028":2482444.0,"1.21.044":395165556.0,"1.21.045":6732174.0,"1.21.047":0.0,"1.23.001":27943130.0,"1.31.001":0.0,"1.41.001":11507934145.0,"1.41.006":3547036389.0,"1.41.008":499139648.0,"1.41.009":338154715.0,"1.41.010":1439136571.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2683836646.0,"1.49.001":0.0,"1.51.001":5968945.0,"1.51.002":0.0,"1.51.005":29679119.0,"1.51.006":1416459796.0,"1.52.001":30941748.0,"1.52.002":0.0,"1.53.001":4077439411.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":12590996200.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4891515146.0,"1.71.002":-1773628644.0,"1.71.003":-725350834.0,"1.71.004":-3520567738.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":10255805940.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2391096224.0,"37.013":29425623.0,"37.378":77319466.0,"37.743":3864283.0,"38.474":0.0,"38.839":0.0,"37.044":141782295.0,"37.074":168804000.0,"37.105":94039959.0,"37.501":82202894.0,"37.866":956491.0,"37.166":6416102411.0,"37.197":12940223.0,"37.227":15282364446.0,"37.592":3246178546.0,"2.14.003":1046768800.0,"2.14.004":1190710449.0,"2.14.005":1176820700.0,"2.14.006":1620000000.0,"2.15.001":18813800.0,"2.18.001":1011694192.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":7972446430.0,"3.30.001":-1770226212.0,"3.40.001":0.0,"Aset Lancar":41190960837.0,"Aset Tetap":14197046258.0,"Total Aset":55388007095.0,"Liabilitas Lancar":48610786880.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48610786880.0,"Ekuitas":6777220218.0,"Total Liabilitas & Ekuitas":55388007098.0},"2025-1":{"36.892":0.0,"37.257":8182500.0,"38.353":800000.0,"38.718":2570200.0,"39.083":346400.0,"39.448":0.0,"41.640":0.0,"42.736":1380500.0,"43.101":11283024.0,"43.466":4380726.0,"43.831":5181599.0,"45.658":3209483.0,"46.023":959200.0,"46.753":6772087.0,"11.689":655097.0,"12.055":11902455.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7568990.0,"1.21.002":0.0,"1.21.003":2197455.0,"1.21.004":18387238.0,"1.21.005":19116572.0,"1.21.006":5775097.0,"1.21.007":2436878.0,"1.21.008":0.0,"1.21.009":1062478.0,"1.21.010":5629589.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":13019104.0,"1.21.016":0.0,"1.21.017":757241.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":12249098.0,"1.21.023":604133.0,"1.21.025":2235889.0,"1.21.026":0.0,"1.21.027":3521049.0,"1.21.028":2468165.0,"1.21.044":416967186.0,"1.21.045":45095404.0,"1.21.047":0.0,"1.23.001":30190303.0,"1.31.001":0.0,"1.41.001":11335059320.0,"1.41.006":3572363396.0,"1.41.008":594993141.0,"1.41.009":292693286.0,"1.41.010":1471080818.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":3306570265.0,"1.49.001":0.0,"1.51.001":5116238.0,"1.51.002":0.0,"1.51.005":32480768.0,"1.51.006":1419722396.0,"1.52.001":20593526.0,"1.52.002":0.0,"1.53.001":4205327471.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4810829617.0,"1.71.002":-1786246255.0,"1.71.003":-725818543.0,"1.71.004":-3527723686.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":11074323302.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2291096224.0,"37.013":27692310.0,"37.378":75969669.0,"37.743":5607604.0,"38.474":0.0,"38.839":0.0,"37.044":150941045.0,"37.074":163900000.0,"37.105":112997459.0,"37.501":83623047.0,"37.866":1200953.0,"37.166":6507680338.0,"37.197":12940223.0,"37.227":13676324187.0,"37.592":3322475823.0,"2.14.003":1046768800.0,"2.14.004":1194834833.0,"2.14.005":1176820700.0,"2.14.006":1620000000.0,"2.15.001":11728800.0,"2.18.001":820279994.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":26725677.0,"3.40.001":0.0,"Aset Lancar":41542207481.0,"Aset Tetap":13097989919.0,"Total Aset":54640197400.0,"Liabilitas Lancar":47720301449.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":47720301449.0,"Ekuitas":6919895954.0,"Total Liabilitas & Ekuitas":54640197403.0},"2025-2":{"36.892":0.0,"37.257":2837700.0,"38.353":0.0,"38.718":30900.0,"39.083":21265800.0,"39.448":858000.0,"41.640":0.0,"42.736":2144100.0,"43.101":4051050.0,"43.466":4474693.0,"43.831":2377933.0,"45.658":3156831.0,"46.023":9797200.0,"46.753":182737.0,"11.689":5332697.0,"12.055":9708193.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7548990.0,"1.21.002":0.0,"1.21.003":1531675.0,"1.21.004":2994334.0,"1.21.005":10303417.0,"1.21.006":2509747.0,"1.21.007":10199085.0,"1.21.008":0.0,"1.21.009":3630478.0,"1.21.010":8488132.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":4701680.0,"1.21.016":0.0,"1.21.017":642241.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":1873773.0,"1.21.023":579133.0,"1.21.025":2221545.0,"1.21.026":0.0,"1.21.027":4573299.0,"1.21.028":2453888.0,"1.21.044":207147855.0,"1.21.045":7028942.0,"1.21.047":0.0,"1.23.001":32437476.0,"1.31.001":0.0,"1.41.001":12782689698.0,"1.41.006":3346858625.0,"1.41.008":672215384.0,"1.41.009":302306439.0,"1.41.010":1490455553.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":3622741423.0,"1.49.001":0.0,"1.51.001":4263531.0,"1.51.002":0.0,"1.51.005":35282417.0,"1.51.006":1436819796.0,"1.52.001":17346711.0,"1.52.002":0.0,"1.53.001":4220687471.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4846094148.0,"1.71.002":-1798863866.0,"1.71.003":-726286251.0,"1.71.004":-3534665071.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":9295390617.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2291096224.0,"37.013":27022174.0,"37.378":76384737.0,"37.743":5437849.0,"38.474":0.0,"38.839":0.0,"37.044":151345815.0,"37.074":162400000.0,"37.105":113532089.0,"37.501":64771808.0,"37.866":1041481.0,"37.166":6721093759.0,"37.197":12940223.0,"37.227":16074875722.0,"37.592":3374633014.0,"2.14.003":1046768800.0,"2.14.004":1198486837.0,"2.14.005":1176820700.0,"2.14.006":1620000000.0,"2.15.001":18813800.0,"2.18.001":1047299828.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":274329080.0,"3.40.001":0.0,"Aset Lancar":42948052288.0,"Aset Tetap":13042698684.0,"Total Aset":55990750972.0,"Liabilitas Lancar":48823251615.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48823251615.0,"Ekuitas":7167499357.0,"Total Liabilitas & Ekuitas":55990750972.0},"2025-3":{"36.892":0.0,"37.257":1846700.0,"38.353":0.0,"38.718":25000.0,"39.083":15341000.0,"39.448":1287300.0,"41.640":0.0,"42.736":566600.0,"43.101":7835435.0,"43.466":3387700.0,"43.831":3757777.0,"45.658":2268313.0,"46.023":530122.0,"46.753":1289700.0,"11.689":105773.0,"12.055":2022824.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7528990.0,"1.21.002":0.0,"1.21.003":15716017.0,"1.21.004":309546648.0,"1.21.005":73124755.0,"1.21.006":7564842.0,"1.21.007":6744619.0,"1.21.008":0.0,"1.21.009":1157778.0,"1.21.010":6748530.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":11855909.0,"1.21.016":0.0,"1.21.017":527241.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":5275978.0,"1.21.023":554133.0,"1.21.025":2207189.0,"1.21.026":0.0,"1.21.027":4558299.0,"1.21.028":2439600.0,"1.21.044":77269871.0,"1.21.045":11120885.0,"1.21.047":0.0,"1.23.001":34684649.0,"1.31.001":0.0,"1.41.001":13030039994.0,"1.41.006":3679918909.0,"1.41.008":772433992.0,"1.41.009":312659932.0,"1.41.010":1515518604.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2379871785.0,"1.49.001":0.0,"1.51.001":3410824.0,"1.51.002":0.0,"1.51.005":38238966.0,"1.51.006":1439353796.0,"1.52.001":8094111.0,"1.52.002":0.0,"1.53.001":4130495471.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4881358679.0,"1.71.002":-1811481478.0,"1.71.003":-726722709.0,"1.71.004":-3541376770.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":7407718617.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2291096224.0,"37.013":28542940.0,"37.378":76384737.0,"37.743":7401839.0,"38.474":0.0,"38.839":0.0,"37.044":152500880.0,"37.074":104900000.0,"37.105":117747439.0,"37.501":78090648.0,"37.866":981428.0,"37.166":6990915316.0,"37.197":12940223.0,"37.227":17499203749.0,"37.592":3412769158.0,"2.14.003":1046768800.0,"2.14.004":1199937467.0,"2.14.005":1176820700.0,"2.14.006":1620000000.0,"2.15.001":25898800.0,"2.18.001":947583566.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":121427716.0,"3.40.001":0.0,"Aset Lancar":42568228277.0,"Aset Tetap":12987668384.0,"Total Aset":55555896661.0,"Liabilitas Lancar":48541298669.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48541298669.0,"Ekuitas":7014597993.0,"Total Liabilitas & Ekuitas":55555896662.0},"2025-4":{"36.892":0.0,"37.257":2934500.0,"38.353":0.0,"38.718":6019400.0,"39.083":23051300.0,"39.448":1912800.0,"41.640":0.0,"42.736":2004100.0,"43.101":9377698.0,"43.466":457000.0,"43.831":6231539.0,"45.658":3217232.0,"46.023":13000.0,"46.753":2822124.0,"11.689":96413.0,"12.055":3239000.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7508990.0,"1.21.002":0.0,"1.21.003":39856547.0,"1.21.004":22788708.0,"1.21.005":24280345.0,"1.21.006":89244457.0,"1.21.007":1063857.0,"1.21.008":0.0,"1.21.009":1127778.0,"1.21.010":3964467.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":3167209.0,"1.21.016":0.0,"1.21.017":512241.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":992798.0,"1.21.023":529133.0,"1.21.025":2192836.0,"1.21.026":0.0,"1.21.027":6093224.0,"1.21.028":2425315.0,"1.21.044":75562416.0,"1.21.045":7540670.0,"1.21.047":0.0,"1.23.001":36931822.0,"1.31.001":0.0,"1.41.001":13892616967.0,"1.41.006":3843538028.0,"1.41.008":856107261.0,"1.41.009":319950699.0,"1.41.010":1539968741.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2134609300.0,"1.49.001":0.0,"1.51.001":2558117.0,"1.51.002":0.0,"1.51.005":41065516.0,"1.51.006":1450631796.0,"1.52.001":5201587.0,"1.52.002":0.0,"1.53.001":4170855471.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4916623210.0,"1.71.002":-1824099089.0,"1.71.003":-727159168.0,"1.71.004":-3547844405.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":8409927455.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":3208017424.0,"37.013":27379778.0,"37.378":76643736.0,"37.743":4052767.0,"38.474":0.0,"38.839":0.0,"37.044":152525445.0,"37.074":104900000.0,"37.105":113381759.0,"37.501":70280828.0,"37.866":954783.0,"37.166":7064129645.0,"37.197":12940223.0,"37.227":15978864409.0,"37.592":3500494184.0,"2.14.003":1046768800.0,"2.14.004":1202102370.0,"2.14.005":1176820700.0,"2.14.006":1620000000.0,"2.15.001":25898800.0,"2.18.001":871703831.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":312392915.0,"3.40.001":0.0,"Aset Lancar":43283564118.0,"Aset Tetap":12932882148.0,"Total Aset":56216446266.0,"Liabilitas Lancar":49010883075.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":49010883075.0,"Ekuitas":7205563192.0,"Total Liabilitas & Ekuitas":56216446267.0},"2025-5":{"36.892":0.0,"37.257":1014500.0,"38.353":8244700.0,"38.718":6705900.0,"39.083":60526700.0,"39.448":36500.0,"41.640":0.0,"42.736":4868300.0,"43.101":12192648.0,"43.466":2346300.0,"43.831":6099439.0,"45.658":4594232.0,"46.023":3863900.0,"46.753":3182224.0,"11.689":15256323.0,"12.055":7048000.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7488990.0,"1.21.002":0.0,"1.21.003":19322982.0,"1.21.004":20699757.0,"1.21.005":10804137.0,"1.21.006":30488842.0,"1.21.007":302856344.0,"1.21.008":0.0,"1.21.009":3291978.0,"1.21.010":8936110.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":10572986.0,"1.21.016":0.0,"1.21.017":5367841.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":16647773.0,"1.21.023":529133.0,"1.21.025":2178472.0,"1.21.026":0.0,"1.21.027":6093224.0,"1.21.028":2411019.0,"1.21.044":570104229.0,"1.21.045":5630564.0,"1.21.047":0.0,"1.23.001":36931822.0,"1.31.001":0.0,"1.41.001":13302600347.0,"1.41.006":3168899579.0,"1.41.008":952206422.0,"1.41.009":327404001.0,"1.41.010":1565565308.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":1943953296.0,"1.49.001":0.0,"1.51.001":1705410.0,"1.51.002":0.0,"1.51.005":44022066.0,"1.51.006":1463625155.0,"1.52.001":2474455.0,"1.52.002":0.0,"1.53.001":4193988798.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4951887741.0,"1.71.002":-1836716700.0,"1.71.003":-727595626.0,"1.71.004":-3554043353.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":7702038484.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":4958017424.0,"37.013":27715592.0,"37.378":77124519.0,"37.743":3938039.0,"38.474":0.0,"38.839":0.0,"37.044":152590045.0,"37.074":95500000.0,"37.105":99463259.0,"37.501":83095562.0,"37.866":951483.0,"37.166":6468140511.0,"37.197":12940223.0,"37.227":16753919820.0,"37.592":3361809148.0,"2.14.003":1046768800.0,"2.14.004":1206042449.0,"2.14.005":1176820700.0,"2.14.006":0.0,"2.15.001":22192800.0,"2.18.001":797412151.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":397699596.0,"3.40.001":0.0,"Aset Lancar":42802082422.0,"Aset Tetap":12878364600.0,"Total Aset":55680447022.0,"Liabilitas Lancar":48389577147.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48389577147.0,"Ekuitas":7290869873.0,"Total Liabilitas & Ekuitas":55680447020.0},"2025-6":{"36.892":0.0,"37.257":1014500.0,"38.353":833200.0,"38.718":6000.0,"39.083":14663000.0,"39.448":7517000.0,"41.640":0.0,"42.736":9601650.0,"43.101":8975637.0,"43.466":104800.0,"43.831":5568209.0,"45.658":3210732.0,"46.023":315000.0,"46.753":2600600.0,"11.689":3050988.0,"12.055":6822530.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":28016020.0,"1.21.004":2536187.0,"1.21.005":5733592.0,"1.21.006":1005477.0,"1.21.007":1061226.0,"1.21.008":0.0,"1.21.009":5216978.0,"1.21.010":5217649.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":1001812.0,"1.21.016":0.0,"1.21.017":5252841.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":3856548.0,"1.21.023":479133.0,"1.21.025":2164111.0,"1.21.026":0.0,"1.21.027":6063224.0,"1.21.028":2396726.0,"1.21.044":21311151.0,"1.21.045":10723671.0,"1.21.047":0.0,"1.23.001":41426168.0,"1.31.001":0.0,"1.41.001":14643221945.0,"1.41.006":3142931510.0,"1.41.008":1050724553.0,"1.41.009":334374066.0,"1.41.010":1591133261.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":1416913918.0,"1.49.001":0.0,"1.51.001":852703.0,"1.51.002":0.0,"1.51.005":46765306.0,"1.51.006":1456772824.0,"1.52.001":2609328.0,"1.52.002":0.0,"1.53.001":4142287721.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-4987152272.0,"1.71.002":-1849334311.0,"1.71.003":-728032084.0,"1.71.004":-3560227197.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":821770714.0,"36.924":10482543587.0,"37.289":727069228.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":5430642191.0,"37.013":27923127.0,"37.378":80644849.0,"37.743":5036473.0,"38.474":0.0,"38.839":0.0,"37.044":152647250.0,"37.074":95500000.0,"37.105":115308059.0,"37.501":83775207.0,"37.866":955250.0,"37.166":6498347287.0,"37.197":12940223.0,"37.227":13290535510.0,"37.592":3339813523.0,"2.14.003":1046768800.0,"2.14.004":1207557281.0,"2.14.005":1176820700.0,"2.14.006":0.0,"2.15.001":25178800.0,"2.18.001":858595095.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":339166730.0,"3.40.001":0.0,"Aset Lancar":42683104201.0,"Aset Tetap":12823862156.0,"Total Aset":55506966357.0,"Liabilitas Lancar":48274629350.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48274629350.0,"Ekuitas":7232337007.0,"Total Liabilitas & Ekuitas":55506966357.0},"2025-7":{"36.892":0.0,"37.257":6191400.0,"38.353":500000.0,"38.718":15275800.0,"39.083":4609700.0,"39.448":0.0,"41.640":0.0,"42.736":3000700.0,"43.101":5403678.0,"43.466":57300.0,"43.831":6552500.0,"45.658":495079.0,"46.023":69000.0,"46.753":1281365.0,"11.689":8155853.0,"12.055":5188400.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":5884655.0,"1.21.004":1155460.0,"1.21.005":1000619.0,"1.21.006":20451652.0,"1.21.007":1065739.0,"1.21.008":0.0,"1.21.009":2583778.0,"1.21.010":4833184.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":17614238.0,"1.21.016":0.0,"1.21.017":5137841.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":3736128.0,"1.21.023":454133.0,"1.21.025":2149739.0,"1.21.026":0.0,"1.21.027":9517324.0,"1.21.028":2382421.0,"1.21.044":552018503.0,"1.21.045":1032697.0,"1.21.047":0.0,"1.23.001":43673341.0,"1.31.001":0.0,"1.41.001":14678281019.0,"1.41.006":3211673580.0,"1.41.008":95740555.0,"1.41.009":342199700.0,"1.41.010":1616684431.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2148604798.0,"1.49.001":0.0,"1.51.001":0.0,"1.51.002":0.0,"1.51.005":49508546.0,"1.51.006":1467610324.0,"1.52.001":2880734.0,"1.52.002":0.0,"1.53.001":4143486394.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5022416803.0,"1.71.002":-1861414621.0,"1.71.003":-728468543.0,"1.71.004":-3565083020.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":848131339.0,"36.924":11509647569.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":5372308858.0,"37.013":27343020.0,"37.378":84474077.0,"37.743":4570609.0,"38.474":0.0,"38.839":0.0,"37.044":152655665.0,"37.074":95500000.0,"37.105":99889889.0,"37.501":79562563.0,"37.866":996174.0,"37.166":7011224862.0,"37.197":12940223.0,"37.227":12622602698.0,"37.592":3712239591.0,"2.14.003":1046768800.0,"2.14.004":1216082789.0,"2.14.005":1176820700.0,"2.14.006":0.0,"2.15.001":21472800.0,"2.18.001":926486375.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":196992974.0,"3.40.001":0.0,"Aset Lancar":43134913014.0,"Aset Tetap":12771225033.0,"Total Aset":55906138047.0,"Liabilitas Lancar":48815974797.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48815974797.0,"Ekuitas":7090163251.0,"Total Liabilitas & Ekuitas":55906138048.0},"2025-8":{"36.892":10000000.0,"37.257":4191400.0,"38.353":2485000.0,"38.718":6500.0,"39.083":741200.0,"39.448":0.0,"41.640":0.0,"42.736":13418900.0,"43.101":3906400.0,"43.466":2126857.0,"43.831":7664888.0,"45.658":804588.0,"46.023":3515200.0,"46.753":2728000.0,"11.689":3137443.0,"12.055":5202761.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":2332263.0,"1.21.004":5421392.0,"1.21.005":4035837.0,"1.21.006":1039577.0,"1.21.007":1001324.0,"1.21.008":0.0,"1.21.009":4900078.0,"1.21.010":5446466.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":8243693.0,"1.21.016":0.0,"1.21.017":5022841.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":3292598.0,"1.21.023":429133.0,"1.21.025":2135370.0,"1.21.026":0.0,"1.21.027":2304324.0,"1.21.028":2368120.0,"1.21.044":83523435.0,"1.21.045":5693172.0,"1.21.047":0.0,"1.23.001":45920514.0,"1.31.001":0.0,"1.41.001":14146707900.0,"1.41.006":3262839482.0,"1.41.008":188095007.0,"1.41.009":302940431.0,"1.41.010":1640778649.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2358550274.0,"1.49.001":0.0,"1.51.001":0.0,"1.51.002":0.0,"1.51.005":52251786.0,"1.51.006":1478285324.0,"1.52.001":3450782.0,"1.52.002":0.0,"1.53.001":4143486394.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5057681334.0,"1.71.002":-1873494930.0,"1.71.003":-728905001.0,"1.71.004":-3569920304.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":866297107.0,"36.924":12425822231.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":5313975525.0,"37.013":28985551.0,"37.378":88109884.0,"37.743":4297727.0,"38.474":213568.0,"38.839":0.0,"37.044":152728340.0,"37.074":95500000.0,"37.105":99217859.0,"37.501":66599334.0,"37.866":945139.0,"37.166":7016298362.0,"37.197":12940223.0,"37.227":11586009771.0,"37.592":3250792715.0,"2.14.003":1000000000.0,"2.14.004":1216967047.0,"2.14.005":1176820700.0,"2.14.006":0.0,"2.15.001":15107800.0,"2.18.001":928104222.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":152642881.0,"3.40.001":0.0,"Aset Lancar":42467196009.0,"Aset Tetap":12718606451.0,"Total Aset":55185802460.0,"Liabilitas Lancar":48139989301.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":48139989301.0,"Ekuitas":7045813158.0,"Total Liabilitas & Ekuitas":55185802459.0},"2025-9":{"36.892":10000000.0,"37.257":4191400.0,"38.353":500000.0,"38.718":3167000.0,"39.083":2776400.0,"39.448":4139000.0,"41.640":0.0,"42.736":5984700.0,"43.101":7439930.0,"43.466":105857.0,"43.831":585866.0,"45.658":839224.0,"46.023":3400.0,"46.753":183068.0,"11.689":3683738.0,"12.055":3126812.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":2267758.0,"1.21.004":9212262.0,"1.21.005":1043107.0,"1.21.006":2480972.0,"1.21.007":1001143.0,"1.21.008":0.0,"1.21.009":1204178.0,"1.21.010":5679758.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":1048464.0,"1.21.016":0.0,"1.21.017":1405341.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":22475023.0,"1.21.023":404133.0,"1.21.025":2120989.0,"1.21.026":0.0,"1.21.027":1014324.0,"1.21.028":2353806.0,"1.21.044":3846284.0,"1.21.045":9246794.0,"1.21.047":0.0,"1.23.001":48167687.0,"1.31.001":0.0,"1.41.001":13725393982.0,"1.41.006":3309731811.0,"1.41.008":274629393.0,"1.41.009":311250227.0,"1.41.010":1664967081.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2733188140.0,"1.49.001":0.0,"1.51.001":8527066.0,"1.51.002":0.0,"1.51.005":55603769.0,"1.51.006":1481156093.0,"1.52.001":3973742.0,"1.52.002":0.0,"1.53.001":4143486394.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5092945866.0,"1.71.002":-1885575239.0,"1.71.003":-729341459.0,"1.71.004":-3574757587.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":886768848.0,"36.924":14024078055.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":5201975525.0,"37.013":28736973.0,"37.378":91495946.0,"37.743":4430652.0,"38.474":213568.0,"38.839":0.0,"37.044":152776790.0,"37.074":95500000.0,"37.105":98887859.0,"37.501":63174734.0,"37.866":961194.0,"37.166":6683264962.0,"37.197":12940223.0,"37.227":10697280860.0,"37.592":3134697152.0,"2.14.003":1000000000.0,"2.14.004":1218389888.0,"2.14.005":905579354.0,"2.14.006":0.0,"2.15.001":15107800.0,"2.18.001":847766500.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":334911335.0,"3.40.001":0.0,"Aset Lancar":42520376822.0,"Aset Tetap":12665987869.0,"Total Aset":55186364691.0,"Liabilitas Lancar":47958283079.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":47958283079.0,"Ekuitas":7228081612.0,"Total Liabilitas & Ekuitas":55186364691.0},"2025-10":{"36.892":10000000.0,"37.257":1106400.0,"38.353":2158800.0,"38.718":552800.0,"39.083":21310600.0,"39.448":314000.0,"41.640":0.0,"42.736":2732400.0,"43.101":8492043.0,"43.466":79265.0,"43.831":1010066.0,"45.658":1287265.0,"46.023":4352000.0,"46.753":271868.0,"11.689":4062008.0,"12.055":2081800.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":1543113.0,"1.21.004":258089492.0,"1.21.005":9901507.0,"1.21.006":11069207.0,"1.21.007":1004624.0,"1.21.008":0.0,"1.21.009":1174178.0,"1.21.010":4919715.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":25171308.0,"1.21.016":0.0,"1.21.017":1290341.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":995823.0,"1.21.023":379133.0,"1.21.025":2106611.0,"1.21.026":0.0,"1.21.027":999324.0,"1.21.028":2339497.0,"1.21.044":79478168.0,"1.21.045":5467129.0,"1.21.047":0.0,"1.23.001":50414860.0,"1.31.001":0.0,"1.41.001":12535057112.0,"1.41.006":3358919895.0,"1.41.008":328621755.0,"1.41.009":319692091.0,"1.41.010":1688408068.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2421769490.0,"1.49.001":0.0,"1.51.001":7674359.0,"1.51.002":0.0,"1.51.005":59305752.0,"1.51.006":1491044586.0,"1.52.001":4663365.0,"1.52.002":0.0,"1.53.001":4426425121.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5128210397.0,"1.71.002":-1897655548.0,"1.71.003":-729777918.0,"1.71.004":-3579076850.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":912354505.0,"36.924":12646007642.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":5511479303.0,"37.013":26274404.0,"37.378":95130108.0,"37.743":3367163.0,"38.474":0.0,"38.839":0.0,"37.044":153343230.0,"37.074":81400000.0,"37.105":397885859.0,"37.501":51300016.0,"37.866":981104.0,"37.166":6686948273.0,"37.197":12940223.0,"37.227":10587698171.0,"37.592":3222405256.0,"2.14.003":1000000000.0,"2.14.004":1220525340.0,"2.14.005":769958681.0,"2.14.006":0.0,"2.15.001":18813800.0,"2.18.001":864310648.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":467844756.0,"3.40.001":0.0,"Aset Lancar":41804507645.0,"Aset Tetap":12613887307.0,"Total Aset":54418394952.0,"Liabilitas Lancar":47057379922.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":47057379922.0,"Ekuitas":7361015033.0,"Total Liabilitas & Ekuitas":54418394955.0},"2025-11":{"36.892":10000000.0,"37.257":1106400.0,"38.353":26072800.0,"38.718":680300.0,"39.083":8151800.0,"39.448":3475500.0,"41.640":0.0,"42.736":6380500.0,"43.101":8286723.0,"43.466":1684200.0,"43.831":2796000.0,"45.658":2936947.0,"46.023":4294550.0,"46.753":18451.0,"11.689":873158.0,"12.055":4905371.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":8578888.0,"1.21.004":11532387.0,"1.21.005":44594507.0,"1.21.006":1892372.0,"1.21.007":6966134.0,"1.21.008":0.0,"1.21.009":2711278.0,"1.21.010":1184641.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":1000502.0,"1.21.016":0.0,"1.21.017":1175341.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":1041948.0,"1.21.023":354133.0,"1.21.025":2092221.0,"1.21.026":0.0,"1.21.027":984324.0,"1.21.028":3325175.0,"1.21.044":31414553.0,"1.21.045":3976682.0,"1.21.047":0.0,"1.23.001":52662033.0,"1.31.001":0.0,"1.41.001":11353252637.0,"1.41.006":3289202965.0,"1.41.008":409974414.0,"1.41.009":277317163.0,"1.41.010":1712309452.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2466794688.0,"1.49.001":0.0,"1.51.001":6821652.0,"1.51.002":0.0,"1.51.005":62932735.0,"1.51.006":1490409586.0,"1.52.001":5149823.0,"1.52.002":0.0,"1.53.001":4426425121.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5163474928.0,"1.71.002":-1909727524.0,"1.71.003":-730214376.0,"1.71.004":-3582869988.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":915759848.0,"36.924":12626311142.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":4760124715.0,"37.013":28535102.0,"37.378":96577902.0,"37.743":5041211.0,"38.474":213568.0,"38.839":0.0,"37.044":155552465.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":56474681.0,"37.866":962596.0,"37.166":6401714906.0,"37.197":12940223.0,"37.227":10444801435.0,"37.592":3145572586.0,"2.14.003":1000000000.0,"2.14.004":1222349580.0,"2.14.005":634338008.0,"2.14.006":0.0,"2.15.001":4643800.0,"2.18.001":937918417.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":451199274.0,"3.40.001":0.0,"Aset Lancar":40404510761.0,"Aset Tetap":12562321204.0,"Total Aset":52966831965.0,"Liabilitas Lancar":45622462415.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":45622462415.0,"Ekuitas":7344369551.0,"Total Liabilitas & Ekuitas":52966831966.0},"2025-12":{"36.892":10000000.0,"37.257":1106400.0,"38.353":9313700.0,"38.718":1699500.0,"39.083":4707700.0,"39.448":1880000.0,"41.640":0.0,"42.736":11054200.0,"43.101":6032523.0,"43.466":693700.0,"43.831":4070020.0,"45.658":1892363.0,"46.023":3066800.0,"46.753":263000.0,"11.689":3960138.0,"12.055":6297700.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":13773303.0,"1.21.004":154901312.0,"1.21.005":1065641.0,"1.21.006":30076102.0,"1.21.007":8947273.0,"1.21.008":0.0,"1.21.009":2711278.0,"1.21.010":2377660.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":21947914.0,"1.21.016":0.0,"1.21.017":1060341.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":28016648.0,"1.21.023":329133.0,"1.21.025":2077836.0,"1.21.026":0.0,"1.21.027":969324.0,"1.21.028":12510920.0,"1.21.044":11958731.0,"1.21.045":3754868.0,"1.21.047":0.0,"1.23.001":54909206.0,"1.31.001":0.0,"1.41.001":11009119565.0,"1.41.006":3365508524.0,"1.41.008":492514532.0,"1.41.009":215712344.0,"1.41.010":1736628653.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2371936362.0,"1.49.001":0.0,"1.51.001":5968945.0,"1.51.002":0.0,"1.51.005":66559718.0,"1.51.006":1497259586.0,"1.52.001":7501718.0,"1.52.002":0.0,"1.53.001":4087675471.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5198739459.0,"1.71.002":-1921799500.0,"1.71.003":-730650834.0,"1.71.004":-3586132969.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":943773816.0,"36.924":11861680675.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":4090400140.0,"37.013":29392886.0,"37.378":94910639.0,"37.743":3706525.0,"38.474":213568.0,"38.839":0.0,"37.044":155722040.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":61153901.0,"37.866":956001.0,"37.166":6341360996.0,"37.197":12940223.0,"37.227":11166474794.0,"37.592":3334839529.0,"2.14.003":1000000000.0,"2.14.004":1225028714.0,"2.14.005":596418198.0,"2.14.006":0.0,"2.15.001":937800.0,"2.18.001":882877734.0,"2.41.001":0.0,"37.167":575000000.0,"3.20.001":6318170277.0,"3.30.001":563277931.0,"3.40.001":0.0,"Aset Lancar":39920581358.0,"Aset Tetap":12511285258.0,"Total Aset":52431866616.0,"Liabilitas Lancar":44975418409.0,"Liabilitas Tidak Lancar":0.0,"Total Liabilitas":44975418409.0,"Ekuitas":7456448208.0,"Total Liabilitas & Ekuitas":52431866617.0},"2026-1":{"36.892":10000000.0,"37.257":1106400.0,"38.353":7003000.0,"38.718":6291150.0,"39.083":1859600.0,"39.448":3496500.0,"41.640":930200.0,"42.736":2434085.0,"43.101":598465.0,"43.466":1827951.0,"43.831":2129468.0,"45.658":3862000.0,"46.023":333233.0,"46.753":0.0,"11.689":147336.0,"12.055":5666900.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":3927845.0,"1.21.004":11082604.0,"1.21.005":3682425.0,"1.21.006":1004432.0,"1.21.007":1486797.0,"1.21.008":0.0,"1.21.009":2651278.0,"1.21.010":1827023.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":3443388.0,"1.21.016":0.0,"1.21.017":945341.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":21758473.0,"1.21.023":304133.0,"1.21.025":2063317.0,"1.21.026":0.0,"1.21.027":954324.0,"1.21.028":44622736.0,"1.21.044":5084655983.0,"1.21.045":1164048.0,"1.21.047":131876821.0,"1.23.001":57156379.0,"1.31.001":0.0,"1.41.001":11453776404.0,"1.41.006":3866266490.0,"1.41.008":548517970.0,"1.41.009":223671246.0,"1.41.010":1760041960.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2762991829.0,"1.49.001":0.0,"1.51.001":5116238.0,"1.51.002":0.0,"1.51.005":67581854.0,"1.51.006":1504058185.0,"1.52.001":7501718.0,"1.52.002":0.0,"1.53.001":4158392729.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5234003990.0,"1.71.002":-1933814184.0,"1.71.003":-731087293.0,"1.71.004":-3588342565.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":953059863.0,"36.924":11241995520.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":3329198480.0,"37.013":25820321.0,"37.378":96176893.0,"37.743":4012435.0,"38.474":0.0,"38.839":226318.0,"37.044":155843165.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":61172145.0,"37.866":945811.0,"37.166":6670835486.0,"37.197":12940223.0,"37.227":11130347302.0,"37.592":3378598394.0,"2.14.003":1005970397.0,"2.14.004":1226278437.0,"2.14.005":363096662.0,"2.14.006":0.0,"2.15.001":4643800.0,"2.18.001":985948372.0,"2.41.001":7700000000.0,"37.167":575000000.0,"3.20.001":6881448209.0,"3.30.001":-87847508.0,"3.40.001":0.0,"Aset Lancar":46426980964.0,"Aset Tetap":12461359988.0,"Total Aset":58888340952.0,"Liabilitas Lancar":43819740254.0,"Liabilitas Tidak Lancar":7700000000.0,"Total Liabilitas":51519740254.0,"Ekuitas":7368600701.0,"Total Liabilitas & Ekuitas":58888340955.0},"2026-2":{"36.892":10000000.0,"37.257":1106400.0,"38.353":0.0,"38.718":2093150.0,"39.083":12100.0,"39.448":15083000.0,"41.640":2506700.0,"42.736":4970685.0,"43.101":601465.0,"43.466":5077879.0,"43.831":5248997.0,"45.658":12427000.0,"46.023":923237.0,"46.753":0.0,"11.689":2597146.0,"12.055":4161601.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":5582620.0,"1.21.004":360326121.0,"1.21.005":7351000.0,"1.21.006":1040232.0,"1.21.007":35372625.0,"1.21.008":0.0,"1.21.009":3004078.0,"1.21.010":2974800.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":13680961.0,"1.21.016":0.0,"1.21.017":1031806.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":12092098.0,"1.21.023":279133.0,"1.21.025":2048802.0,"1.21.026":0.0,"1.21.027":939324.0,"1.21.028":48063243.0,"1.21.044":60523424.0,"1.21.045":1354320.0,"1.21.047":4435848826.0,"1.23.001":59403552.0,"1.31.001":0.0,"1.41.001":11451754873.0,"1.41.006":3962120466.0,"1.41.008":609028856.0,"1.41.009":231559852.0,"1.41.010":1784089652.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":1244071908.0,"1.49.001":0.0,"1.51.001":4263531.0,"1.51.002":0.0,"1.51.005":68603990.0,"1.51.006":1541688185.0,"1.52.001":7560987.0,"1.52.002":0.0,"1.53.001":4208589173.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5269268521.0,"1.71.002":-1945714285.0,"1.71.003":-731523751.0,"1.71.004":-3589391932.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":953059863.0,"36.924":10574476441.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2945345064.0,"37.013":26149766.0,"37.378":96705222.0,"37.743":5775141.0,"38.474":0.0,"38.839":395152.0,"37.044":155843165.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":68277387.0,"37.866":935422.0,"37.166":6688656702.0,"37.197":12940223.0,"37.227":10015272249.0,"37.592":4145254820.0,"2.14.003":1009970798.0,"2.14.004":1226990920.0,"2.14.005":227475989.0,"2.14.006":0.0,"2.15.001":4643800.0,"2.18.001":996349855.0,"2.41.001":7700000000.0,"37.167":575000000.0,"3.20.001":6881448209.0,"3.30.001":-193058382.0,"3.40.001":0.0,"Aset Lancar":44877828504.0,"Aset Tetap":12412709531.0,"Total Aset":57290538035.0,"Liabilitas Lancar":42327148209.0,"Liabilitas Tidak Lancar":7700000000.0,"Total Liabilitas":50027148209.0,"Ekuitas":7263389827.0,"Total Liabilitas & Ekuitas":57290538036.0},"2026-3":{"36.892":0.0,"37.257":1106400.0,"38.353":1423400.0,"38.718":18214150.0,"39.083":18850600.0,"39.448":4909500.0,"41.640":9082200.0,"42.736":5820200.0,"43.101":599065.0,"43.466":5633906.0,"43.831":1991254.0,"45.658":47600.0,"46.023":395668.0,"46.753":0.0,"11.689":1295796.0,"12.055":715605.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":13589946.0,"1.21.004":1017925.0,"1.21.005":2028200.0,"1.21.006":1086542.0,"1.21.007":1003738.0,"1.21.008":0.0,"1.21.009":3374078.0,"1.21.010":3150856.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":1485526.0,"1.21.016":0.0,"1.21.017":3694229.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":2571123.0,"1.21.023":254133.0,"1.21.025":2034277.0,"1.21.026":0.0,"1.21.027":924324.0,"1.21.028":56890921.0,"1.21.044":29411704.0,"1.21.045":1039820.0,"1.21.047":4010161120.0,"1.23.001":59403552.0,"1.31.001":0.0,"1.41.001":10653625747.0,"1.41.006":3978286596.0,"1.41.008":657828896.0,"1.41.009":239339545.0,"1.41.010":1806723346.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":1558224863.0,"1.49.001":0.0,"1.51.001":3410824.0,"1.51.002":0.0,"1.51.005":69676540.0,"1.51.006":1515898185.0,"1.52.001":7612773.0,"1.52.002":0.0,"1.53.001":4217589173.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5304533052.0,"1.71.002":-1957458136.0,"1.71.003":-731960209.0,"1.71.004":-3590077757.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":959469223.0,"36.924":8775549883.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2834023537.0,"37.013":26093255.0,"37.378":102966258.0,"37.743":6196529.0,"38.474":0.0,"38.839":522704.0,"37.044":155843165.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":52011176.0,"37.866":922999.0,"37.166":7010381561.0,"37.197":12940223.0,"37.227":10977959970.0,"37.592":4115322378.0,"2.14.003":1009970798.0,"2.14.004":1227236033.0,"2.14.005":91855316.0,"2.14.006":0.0,"2.15.001":4643800.0,"2.18.001":968708658.0,"2.41.001":7700000000.0,"37.167":575000000.0,"3.20.001":6881448209.0,"3.30.001":-678922488.0,"3.40.001":0.0,"Aset Lancar":43618194552.0,"Aset Tetap":12364578866.0,"Total Aset":55982773418.0,"Liabilitas Lancar":41505247696.0,"Liabilitas Tidak Lancar":7700000000.0,"Total Liabilitas":49205247696.0,"Ekuitas":6777525721.0,"Total Liabilitas & Ekuitas":55982773417.0},"2026-4":{"36.892":0.0,"37.257":1106400.0,"38.353":15792100.0,"38.718":1730150.0,"39.083":26400.0,"39.448":0.0,"41.640":1770200.0,"42.736":873403.0,"43.101":379785.0,"43.466":2999540.0,"43.831":4697722.0,"45.658":169000.0,"46.023":3319263.0,"46.753":0.0,"11.689":381051.0,"12.055":4378218.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":1521672.0,"1.21.004":7485930.0,"1.21.005":2296290.0,"1.21.006":3228697.0,"1.21.007":1051915.0,"1.21.008":0.0,"1.21.009":1041178.0,"1.21.010":1654522.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":1055046.0,"1.21.016":0.0,"1.21.017":872729.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":988798.0,"1.21.023":229133.0,"1.21.025":2019755.0,"1.21.026":0.0,"1.21.027":899324.0,"1.21.028":64208150.0,"1.21.044":1592047.0,"1.21.045":8022195.0,"1.21.047":3768588108.0,"1.23.001":59403552.0,"1.31.001":0.0,"1.41.001":10508588547.0,"1.41.006":4023186947.0,"1.41.008":720611848.0,"1.41.009":248250759.0,"1.41.010":1830814795.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":1908934361.0,"1.49.001":0.0,"1.51.001":2558117.0,"1.51.002":0.0,"1.51.005":71027480.0,"1.51.006":1743930685.0,"1.52.001":7674057.0,"1.52.002":0.0,"1.53.001":4208589173.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5339797583.0,"1.71.002":-1969129070.0,"1.71.003":-732396668.0,"1.71.004":-3590763583.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":962608999.0,"36.924":8743088943.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2782850659.0,"37.013":26384344.0,"37.378":96641163.0,"37.743":3641458.0,"38.474":0.0,"38.839":451837.0,"37.044":155859315.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":68214652.0,"37.866":950032.0,"37.166":7730626170.0,"37.197":12940223.0,"37.227":10772359835.0,"37.592":4114033129.0,"2.14.003":1000000000.0,"2.14.004":1228167269.0,"2.14.005":52200361.0,"2.14.006":0.0,"2.15.001":4643800.0,"2.18.001":945562783.0,"2.41.001":7700000000.0,"37.167":575000000.0,"3.20.001":6881448209.0,"3.30.001":-829062546.0,"3.40.001":0.0,"Aset Lancar":43884719748.0,"Aset Tetap":12316521116.0,"Total Aset":56201240864.0,"Liabilitas Lancar":41873855202.0,"Liabilitas Tidak Lancar":7700000000.0,"Total Liabilitas":49573855202.0,"Ekuitas":6627385663.0,"Total Liabilitas & Ekuitas":56201240865.0},"2026-5":{"36.892":0.0,"37.257":1106400.0,"38.353":12975700.0,"38.718":1212150.0,"39.083":9509800.0,"39.448":2000000.0,"41.640":997600.0,"42.736":2572400.0,"43.101":3279079.0,"43.466":3419115.0,"43.831":5409781.0,"45.658":8312100.0,"46.023":231378.0,"46.753":0.0,"11.689":105051.0,"12.055":12228787.0,"46.388":0.0,"47.119":0.0,"10.959":0.0,"36.923":15947911.0,"1.21.001":7468990.0,"1.21.002":0.0,"1.21.003":11452347.0,"1.21.004":14024265.0,"1.21.005":16179240.0,"1.21.006":1059222.0,"1.21.007":101066084.0,"1.21.008":0.0,"1.21.009":1011178.0,"1.21.010":1972396.0,"1.21.012":1423799.0,"1.21.014":69697.0,"1.21.015":1000000.0,"1.21.016":0.0,"1.21.017":757729.0,"1.21.018":0.0,"1.21.019":400258.0,"1.21.020":2191440.0,"1.21.021":947000.0,"1.21.022":1065068.0,"1.21.023":204133.0,"1.21.025":2005223.0,"1.21.026":0.0,"1.21.027":874324.0,"1.21.028":65707294.0,"1.21.044":11387536.0,"1.21.045":1165269.0,"1.21.047":340902362.0,"1.23.001":59403552.0,"1.31.001":0.0,"1.41.001":9916010718.0,"1.41.006":3630088582.0,"1.41.008":778552518.0,"1.41.009":256378535.0,"1.41.010":1188587742.0,"1.41.014":85543800.0,"1.41.015":1499153103.0,"1.42.001":-525386062.0,"1.44.001":0.0,"1.45.002":0.0,"1.45.003":0.0,"1.45.004":2420421706.0,"1.49.001":0.0,"1.51.001":1705410.0,"1.51.002":0.0,"1.51.005":72378420.0,"1.51.006":1554811185.0,"1.52.001":7786654.0,"1.52.002":0.0,"1.53.001":4205589173.0,"1.54.001":11076282500.0,"1.54.002":1884000000.0,"1.54.004":235728270.0,"1.54.005":363000000.0,"1.61.001":5266230000.0,"1.62.001":11431495600.0,"1.63.001":2929263348.0,"1.64.001":749516667.0,"1.65.001":3570611086.0,"1.66.001":2530000.0,"1.67.001":83613682.0,"1.71.001":-5375062114.0,"1.71.002":-1980800005.0,"1.71.003":-732833126.0,"1.71.004":-3591094658.0,"1.71.005":-82329654.0,"1.71.006":-2322709.0,"1.82.001":0.0,"1.83.001":0.0,"1.83.002":0.0,"36.893":977836546.0,"36.924":6283723435.0,"37.289":0.0,"37.654":2764930046.0,"36.952":29326150.0,"36.983":2671529132.0,"37.013":27480095.0,"37.378":95956651.0,"37.743":4773350.0,"38.474":0.0,"38.839":404330.0,"37.044":155859315.0,"37.074":81400000.0,"37.105":296974034.0,"37.501":62285615.0,"37.866":936505.0,"37.166":6503260131.0,"37.197":12940223.0,"37.227":11066086131.0,"37.592":4045727197.0,"2.14.003":1000000000.0,"2.14.004":562387152.0,"2.14.005":0.0,"2.14.006":0.0,"2.15.001":4640800.0,"2.18.001":973087337.0,"2.41.001":7700000000.0,"37.167":575000000.0,"3.20.001":6881448209.0,"3.30.001":-1135496354.0,"3.40.001":0.0,"Aset Lancar":39373677912.0,"Aset Tetap":12268818117.0,"Total Aset":51642496029.0,"Liabilitas Lancar":37621544175.0,"Liabilitas Tidak Lancar":7700000000.0,"Total Liabilitas":45321544175.0,"Ekuitas":6320951855.0,"Total Liabilitas & Ekuitas":51642496030.0}},"lastActualYM":"2026-5"};
-window.__BS_DATA__ = BS_DATA;
 
-(function() {
-
-function bsFmtRp(n) {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
-  if (abs >= 1e9) return sign + 'Rp ' + (abs/1e9).toLocaleString('id-ID',{maximumFractionDigits:2}) + ' M';
-  if (abs >= 1e6) return sign + 'Rp ' + (abs/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt';
-  return sign + 'Rp ' + abs.toLocaleString('id-ID', {maximumFractionDigits:0});
-}
-
-const BS_MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-function bsMonthLabel(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  return `${BS_MONTH_NAMES[m-1]} ${y}`;
-}
-
-const lastYM = BS_DATA.lastActualYM;
-const lastRow = BS_DATA.data[lastYM];
-
-document.getElementById('bsAsOfDate').textContent = bsMonthLabel(lastYM);
-
-// ---- KPI Row ----
-const totalAset = lastRow['Total Aset'] || 0;
-const totalLiab = lastRow['Total Liabilitas'] || 0;
-const totalEkuitas = lastRow['Ekuitas'] || 0;
-document.getElementById('bsKpiRow').innerHTML = `
-  <div class="kpi">
-    <div class="label">Total Aset</div>
-    <div class="value">${bsFmtRp(totalAset)}</div>
-    <div class="delta flat">Aset Lancar + Aset Tetap</div>
-  </div>
-  <div class="kpi">
-    <div class="label">Total Liabilitas</div>
-    <div class="value">${bsFmtRp(totalLiab)}</div>
-    <div class="delta flat">${totalAset ? (totalLiab/totalAset*100).toFixed(1) : '0'}% dari Total Aset</div>
-  </div>
-  <div class="kpi">
-    <div class="label">Total Ekuitas</div>
-    <div class="value"${totalEkuitas<0?' style="color:var(--red);"':''}>${bsFmtRp(totalEkuitas)}</div>
-    <div class="delta flat">${totalAset ? (totalEkuitas/totalAset*100).toFixed(1) : '0'}% dari Total Aset</div>
-  </div>
-`;
-
-// ---- Donut: Komposisi Liabilitas & Ekuitas ----
-const liabEquityComponents = [
-  { label: 'Liabilitas Lancar', value: lastRow['Liabilitas Lancar'] || 0, color: '#C97A6B' },
-  { label: 'Liabilitas Tidak Lancar', value: lastRow['Liabilitas Tidak Lancar'] || 0, color: '#D9A24A' },
-  { label: 'Ekuitas', value: lastRow['Ekuitas'] || 0, color: '#7CA582' },
-].filter(c => c.value !== 0);
-
-const donutCanvas = document.getElementById('bsLiabEquityDonut');
-let bsDonutChart = null;
-if (donutCanvas) {
-  const centerTextPlugin = {
-    id: 'bsDonutCenterText',
-    afterDraw(chart) {
-      const {chartArea} = chart;
-      if (!chartArea) return;
-      const x = (chartArea.left + chartArea.right) / 2;
-      const y = (chartArea.top + chartArea.bottom) / 2;
-      const ctx = chart.ctx;
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = '700 18px Georgia, serif';
-      ctx.fillStyle = '#1A1A2E';
-      ctx.fillText(chart.$bsCenterLine1 || '', x, y - 8);
-      ctx.font = '400 9.5px Arial, sans-serif';
-      ctx.fillStyle = '#9AA5B8';
-      ctx.fillText(chart.$bsCenterLine2 || '', x, y + 10);
-      ctx.restore();
-    }
-  };
-  bsDonutChart = new Chart(donutCanvas.getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: liabEquityComponents.map(c=>c.label),
-      datasets: [{ data: liabEquityComponents.map(c=>c.value), backgroundColor: liabEquityComponents.map(c=>c.color), borderColor:'#fff', borderWidth:2, hoverOffset:6 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: {
-        legend: { display:true, position:'right', labels:{ font:{size:11}, boxWidth:10, padding:10 } },
-        tooltip: {
-          backgroundColor:'#3A3530', titleColor:'#D8CFBE', bodyColor:'#FBF8F2',
-          bodyFont:{family:'IBM Plex Mono, monospace', size:11}, padding:8,
-          callbacks: {
-            label: ctx => {
-              const total = ctx.dataset.data.reduce((s,v)=>s+v,0);
-              const pct = total>0 ? (ctx.parsed/total*100).toFixed(1) : '0';
-              return ' ' + ctx.label + ': ' + bsFmtRp(ctx.parsed) + ' (' + pct + '%)';
-            }
-          }
-        }
-      }
-    },
-    plugins: [centerTextPlugin]
-  });
-  bsDonutChart.$bsCenterLine1 = bsFmtRp(liabEquityComponents.reduce((s,c)=>s+c.value,0));
-  bsDonutChart.$bsCenterLine2 = 'Liabilitas + Ekuitas';
-  bsDonutChart.update();
-}
-
-// ---- Account tables ----
-function bsBuildAccountRows(sectionKeys) {
-  return BS_DATA.accounts.filter(a => sectionKeys.includes(a.sectionKey));
-}
-
-function bsRenderSectionTable(tableElId, sectionDefs) {
-  // sectionDefs: [{ sectionKey, subtotalLabel }] in display order
-  let thead = '<tr><th>Akun</th><th>Nilai</th><th>% Bagian</th></tr>';
-  let tbody = '';
-  const grandLabel = sectionDefs.grandTotalLabel;
-
-  sectionDefs.sections.forEach(sec => {
-    const accs = bsBuildAccountRows([sec.sectionKey]);
-    // group by `group` (Account3) for readability, matching the source's hierarchy
-    const byGroup = {};
-    accs.forEach(a => {
-      if (!byGroup[a.group]) byGroup[a.group] = [];
-      byGroup[a.group].push(a);
-    });
-    const subtotalVal = lastRow[sec.subtotalLabel] || 0;
-
-    Object.entries(byGroup).forEach(([groupName, groupAccs]) => {
-      groupAccs.forEach(a => {
-        const val = lastRow[a.code] !== undefined ? lastRow[a.code] : 0;
-        if (val === 0) {
-          // still show, but skip accounts that are zero across the whole available history (pure noise)
-          const hasAnyHistory = Object.values(BS_DATA.data).some(row => (row[a.code]||0) !== 0);
-          if (!hasAnyHistory) return;
-        }
-        const pct = subtotalVal ? (val/subtotalVal*100) : 0;
-        tbody += `<tr class="bs-clickable" data-bscode="${a.code}" data-bslabel="${(a.label||'').replace(/"/g,'&quot;')}">
-          <td>${a.label}</td>
-          <td class="${val<0?'neg':''}">${bsFmtRp(val)}</td>
-          <td style="color:var(--ink-faint);font-size:11.5px;">${pct.toFixed(1)}%</td>
-        </tr>`;
-      });
-    });
-
-    tbody += `<tr class="bs-subtotal"><td>${sec.subtotalLabel}</td><td>${bsFmtRp(subtotalVal)}</td><td></td></tr>`;
-  });
-
-  if (grandLabel) {
-    const grandVal = lastRow[grandLabel] || 0;
-    tbody += `<tr class="bs-grandtotal"><td>${grandLabel}</td><td>${bsFmtRp(grandVal)}</td><td></td></tr>`;
-  }
-
-  const el = document.getElementById(tableElId);
-  if (el) el.innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
-}
-
-bsRenderSectionTable('bsAsetTable', {
-  sections: [
-    { sectionKey: 'aset_lancar', subtotalLabel: 'Aset Lancar' },
-    { sectionKey: 'aset_tetap', subtotalLabel: 'Aset Tetap' },
-  ],
-  grandTotalLabel: 'Total Aset'
-});
-
-bsRenderSectionTable('bsLiabilitasTable', {
-  sections: [
-    { sectionKey: 'liabilitas_lancar', subtotalLabel: 'Liabilitas Lancar' },
-    { sectionKey: 'liabilitas_panjang', subtotalLabel: 'Liabilitas Tidak Lancar' },
-  ],
-  grandTotalLabel: 'Total Liabilitas'
-});
-
-bsRenderSectionTable('bsEkuitasTable', {
-  sections: [
-    { sectionKey: 'ekuitas', subtotalLabel: 'Ekuitas' },
-  ],
-  grandTotalLabel: null
-});
-
-// ---- Drill-down modal: click an account row to see its monthly trend ----
-const bsModalOverlay = document.getElementById('bsModalOverlay');
-const bsModalClose = document.getElementById('bsModalClose');
-function bsCloseModal() { if (bsModalOverlay) bsModalOverlay.classList.remove('open'); }
-if (bsModalClose) bsModalClose.addEventListener('click', bsCloseModal);
-if (bsModalOverlay) bsModalOverlay.addEventListener('click', (e) => { if (e.target === bsModalOverlay) bsCloseModal(); });
-
-function bsOpenModal(code, label) {
-  const yms = Object.keys(BS_DATA.data).sort((a,b) => {
-    const [ya,ma] = a.split('-').map(Number), [yb,mb] = b.split('-').map(Number);
-    return (ya*12+ma) - (yb*12+mb);
-  });
-  const values = yms.map(ym => BS_DATA.data[ym][code] !== undefined ? BS_DATA.data[ym][code] : 0);
-  const nonZero = values.filter(v => v !== 0);
-  const avg = nonZero.length ? nonZero.reduce((s,v)=>s+v,0)/nonZero.length : 0;
-  const latest = values[values.length-1];
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-
-  document.getElementById('bsModalTitle').textContent = label;
-  document.getElementById('bsModalSub').textContent = `Tren bulanan ${bsMonthLabel(yms[0])} — ${bsMonthLabel(yms[yms.length-1])}`;
-  document.getElementById('bsModalKpi').innerHTML = `
-    <div class="ar-modal-kpi-item"><div class="lbl">Nilai Terakhir</div><div class="val">${bsFmtRp(latest)}</div></div>
-    <div class="ar-modal-kpi-item"><div class="lbl">Rata-rata</div><div class="val">${bsFmtRp(avg)}</div></div>
-    <div class="ar-modal-kpi-item"><div class="lbl">Tertinggi / Terendah</div><div class="val" style="font-size:12.5px;">${bsFmtRp(max)} / ${bsFmtRp(min)}</div></div>
-  `;
-  document.getElementById('bsModalHead').innerHTML = '<th>Bulan</th><th>Nilai</th>';
-  document.getElementById('bsModalBody').innerHTML = yms.map((ym,i) => `<tr>
-    <td>${bsMonthLabel(ym)}</td>
-    <td class="${values[i]<0?'neg':''}">${bsFmtRp(values[i])}</td>
-  </tr>`).reverse().join('');
-  if (bsModalOverlay) bsModalOverlay.classList.add('open');
-}
-
-document.querySelectorAll('#bsAsetTable, #bsLiabilitasTable, #bsEkuitasTable').forEach(table => {
-  table.addEventListener('click', (e) => {
-    const row = e.target.closest('tr.bs-clickable');
-    if (!row) return;
-    bsOpenModal(row.dataset.bscode, row.dataset.bslabel);
-  });
-});
-
-})();
-</script>
 
 
 <script>
@@ -11930,6 +11561,125 @@ function pnlRenderYearSelector() {
       </div>
     `).join('');
   }
+})();
+
+// ============ AR MANAGEMENT: Collection Rate & Cross-Data Correlation ============
+// Placed here (within the P&L script) rather than the AR Management script itself,
+// because it needs window.__PNL_DATA__ which is only guaranteed available by this point
+// in the script execution order. The target elements (#arMgmtCorrKpiRow, etc.) live on
+// the AR page, which is fine since this is a single-page app — getElementById works
+// across "pages" regardless of which script populates it.
+(function() {
+  const AR_ITEMS = window.__AR_ITEMS__;
+  const AP_ITEMS = window.__AP_ITEMS__;
+  const SALDO = window.__SALDO__;
+  const kpiRowEl = document.getElementById('arMgmtCorrKpiRow');
+  const findingsEl = document.getElementById('arMgmtFindingsGrid');
+  if (!AR_ITEMS || !kpiRowEl || !findingsEl) return;
+
+  function fmtRpCorr(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs >= 1e9) return sign + 'Rp ' + (abs/1e9).toLocaleString('id-ID',{maximumFractionDigits:2}) + ' M';
+    if (abs >= 1e6) return sign + 'Rp ' + (abs/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt';
+    return sign + 'Rp ' + abs.toLocaleString('id-ID', {maximumFractionDigits:0});
+  }
+
+  const TODAY_STR_CORR = new Date().toISOString().slice(0,10);
+  const TODAY_DATE_CORR = new Date(TODAY_STR_CORR+'T00:00:00');
+  function daysLateCorr(dueDateStr) {
+    if (!dueDateStr) return null;
+    const due = new Date(dueDateStr+'T00:00:00');
+    return Math.round((TODAY_DATE_CORR - due) / (1000*60*60*24));
+  }
+
+  const arTotal = AR_ITEMS.reduce((s,it)=>s+it.nominal, 0);
+  const arOverdue = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 0).reduce((s,it)=>s+it.nominal, 0);
+  const arChronic = AR_ITEMS.filter(it => (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
+  const arChronicInternal = AR_ITEMS.filter(it => it.kategori==='INTERNAL' && (daysLateCorr(it.due_date)||-999) > 360).reduce((s,it)=>s+it.nominal, 0);
+
+  // --- DSO using full-year 2025 (complete year, most reliable basis) ---
+  const netto2025 = PNL_DATA.data && Object.keys(PNL_DATA.data).filter(k=>k.startsWith('2025-'))
+    .reduce((s,k) => s + (PNL_DATA.data[k]['Pendapatan Netto']||0), 0);
+  const dso2025 = netto2025 ? (arTotal/netto2025*365) : null;
+  const TOP_DAYS = 45;
+  // Collection Rate: how close actual collection speed is to the agreed TOP (45 days).
+  // 100% = collecting exactly on time; lower % = taking proportionally longer than agreed.
+  const collectionRate = dso2025 ? Math.min(100, (TOP_DAYS/dso2025*100)) : null;
+
+  // --- Cash correlation ---
+  let saldoTersedia = null;
+  if (SALDO) {
+    const active = (SALDO.daily||[]).filter(d=>d.debit||d.kredit).sort((a,b)=>a.date.localeCompare(b.date));
+    if (active.length) saldoTersedia = active[active.length-1].saldoTersedia;
+  }
+  const apTotal = AP_ITEMS ? AP_ITEMS.reduce((s,it)=>s+it.nominal,0) : 0;
+  const apOverdue = AP_ITEMS ? AP_ITEMS.filter(it=>it.due_date && it.due_date < TODAY_STR_CORR).reduce((s,it)=>s+it.nominal,0) : 0;
+  const liquidityRatio = apOverdue ? (saldoTersedia/apOverdue*100) : null;
+
+  // --- NPM YTD (cascade-corrected, actual months only) ---
+  let npmYtd = null;
+  if (PNL_DATA.data) {
+    const curY = TODAY_YEAR, curM = TODAY_MONTH;
+    let sum = 0, hasAny = false;
+    for (let m=1; m<=12; m++) {
+      if (pnlIsFutureMonth(curY, m)) continue;
+      const row = PNL_DATA.data[curY+'-'+m];
+      if (!row) continue;
+      hasAny = true;
+      const ebitda = (row['GP']||0) - (row['Total Biaya Entitas']||0);
+      const ebit = ebitda - (row['Depreciation & Amortization']||0);
+      const ebitMgmt = ebit - (row['Total Biaya Management']||0);
+      sum += ebitMgmt + (row['Pendapatan Lain']||0) - (row['Biaya Lain']||0);
+    }
+    if (hasAny) npmYtd = sum;
+  }
+
+  // ---- KPI Row ----
+  kpiRowEl.innerHTML = `
+    <div class="kpi">
+      <div class="label">Collection Rate</div>
+      <div class="value"${collectionRate!==null && collectionRate<50 ? ' style="color:var(--red);"' : ''}>${collectionRate!==null ? collectionRate.toFixed(1)+'%' : '—'}</div>
+      <div class="delta flat">DSO ${dso2025?dso2025.toFixed(0):'—'} hari vs TOP ${TOP_DAYS} hari</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Likuiditas vs AP Overdue</div>
+      <div class="value" style="color:var(--red);">${liquidityRatio!==null ? liquidityRatio.toFixed(1)+'%' : '—'}</div>
+      <div class="delta flat">Saldo ${fmtRpCorr(saldoTersedia)} / AP Overdue ${fmtRpCorr(apOverdue)}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">NPM YTD vs Piutang Kronis</div>
+      <div class="value"${npmYtd!==null && npmYtd<0 ? ' style="color:var(--red);"' : ''}>${npmYtd!==null ? fmtRpCorr(npmYtd) : '—'}</div>
+      <div class="delta flat">Piutang &gt;360 hari: ${fmtRpCorr(arChronic)}</div>
+    </div>
+  `;
+
+  // ---- 3 Temuan Kritis ----
+  const findings = [];
+
+  findings.push({
+    title: `Collection Rate ${collectionRate!==null?collectionRate.toFixed(0):'?'}% — piutang ditagih ${dso2025?(dso2025/TOP_DAYS).toFixed(1):'?'}x lebih lambat dari kesepakatan`,
+    desc: `DSO aktual (${dso2025?dso2025.toFixed(0):'?'} hari) jauh melampaui Term of Payment resmi ${TOP_DAYS} hari. Dalam siklus kas normal, piutang Rp ${(arTotal/1e9).toFixed(1)} M ini seharusnya cair dalam waktu jauh lebih singkat. Selisih waktu inilah yang langsung menggerus Saldo Tersedia di Cash Management — kas yang seharusnya sudah masuk masih "tertahan" sebagai piutang.`
+  });
+
+  findings.push({
+    title: `Likuiditas kritis: Saldo Tersedia hanya ${liquidityRatio!==null?liquidityRatio.toFixed(1):'?'}% dari AP yang sudah jatuh tempo`,
+    desc: `Saldo Tersedia (${fmtRpCorr(saldoTersedia)}) jauh di bawah hutang yang sudah harus dibayar (${fmtRpCorr(apOverdue)}). Ini adalah konsekuensi langsung dari Collection Rate yang rendah di atas — kas yang macet di piutang berarti tidak tersedia untuk membayar kewajiban yang sudah jatuh tempo, menciptakan tekanan likuiditas ganda.`
+  });
+
+  findings.push({
+    title: `${arChronic?((arChronicInternal/arChronic)*100).toFixed(0):'?'}% dari piutang kronis (&gt;360 hari) adalah piutang internal grup`,
+    desc: `Dari total piutang kronis ${fmtRpCorr(arChronic)}, sebesar ${fmtRpCorr(arChronicInternal)} adalah piutang ke entitas internal Syaamil/Sygma sendiri. Ini berarti sebagian masalah "piutang macet" sebenarnya bukan soal penagihan ke customer eksternal, melainkan saldo intercompany yang belum diselesaikan secara administratif — perlu jalur penyelesaian berbeda dari piutang dagang biasa.`
+  });
+
+  findingsEl.innerHTML = findings.map((f,i) => `
+    <div class="ar-mgmt-finding-card">
+      <div class="fc-num">Temuan Kritis ${i+1}</div>
+      <div class="fc-title">${f.title}</div>
+      <div class="fc-desc">${f.desc}</div>
+    </div>
+  `).join('');
 })();
 
 // ============ YoY ANALYSIS (sub-tab) ============
