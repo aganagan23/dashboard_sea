@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-28 11:30 WIB | Tambah link sumber benchmark (klik) + section baru Konteks Industri Penerbitan Buku & Al-Quran (konsinyasi, margin tipis, Atradius) -->
+<!-- BUILD: 2026-06-30 02:00 WIB | Analysis SO Laba Rugi: tambah Biaya Cabang per entitas (2026 Jan-Mei), GP Setelah Insentif & Biaya Cabang di tabel bulanan & tahunan -->
 
 <html lang="id">
 <head>
@@ -5464,6 +5464,12 @@ function buildPivotData(filteredRows, cfg) {
   return grouped;
 }
 
+// Biaya cabang per entitas per bulan (dari dataset_sea_variabelcost_-_cost_cabang.csv)
+const BIAYA_CABANG = {"SEA SALES MEDAN":{"2026-1":4153558.0,"2026-2":3700062.0,"2026-3":6200080.0,"2026-4":734110.0,"2026-5":6712100.0},"SEA SALES JAKARTA":{"2026-1":8584000.0,"2026-2":8400200.0,"2026-3":13125000.0,"2026-4":5280000.0,"2026-5":8531000.0},"SEA SALES SURABAYA":{"2026-1":4612137.0,"2026-2":4335233.0,"2026-3":7196932.0,"2026-4":846760.0,"2026-5":4230060.0},"SEA SALES PALEMBANG":{"2026-1":755800.0,"2026-2":829470.0,"2026-3":7362400.0,"2026-4":698100.0,"2026-5":1388500.0},"SEA SALES YOGYAKARTA":{"2026-1":4224000.0,"2026-2":4279000.0,"2026-3":7100000.0,"2026-4":4100000.0,"2026-5":4100000.0},"SEA SALES BANDUNG":{"2026-1":4600000.0,"2026-2":4100000.0,"2026-3":7297400.0,"2026-4":4100000.0,"2026-5":4100000.0},"SEA SALES PUSAT":{"2026-1":51462002.0,"2026-2":5664051.0,"2026-3":5344001.0,"2026-4":13824001.0,"2026-5":8064300.0}};
+
+// Insentif sales per bulan (dari dataset_sea_variabelcost_-_cost_sales.csv)
+const INSENTIF_BY_MONTH = {"2024-1":15326747.0,"2024-2":14579606.0,"2024-3":17324499.0,"2024-4":6912206.0,"2024-5":22716166.0,"2024-6":26895444.0,"2024-7":42188375.0,"2024-8":22152868.0,"2024-9":7170035.0,"2024-10":14723195.0,"2024-11":14275361.0,"2024-12":22994315.0,"2025-1":17816839.0,"2025-2":34087620.0,"2025-3":16283754.0,"2025-4":7042329.0,"2025-5":4559039.0,"2025-6":19858881.0,"2025-7":23537931.0,"2025-8":8987028.0,"2025-9":9567285.0,"2025-10":11086035.0,"2025-11":5927819.0,"2025-12":21996919.0,"2026-1":18554269.0,"2026-2":11433055.0,"2026-3":3308198.0,"2026-4":14314330.0,"2026-5":4362519.0};
+
 // ===== Laba Rugi (P&L up to Gross Profit) — monthly & yearly tables =====
 let labaRugiYearSelected = {};
 
@@ -5474,10 +5480,25 @@ function buildLabaRugiAgg(rows) {
     const y = r[R_YEAR], m = r[R_MONTH];
     const bruto = r[R_BRUTO], netto = r[R_NETTO], cost = r[R_COST], gp = r[R_GP];
     const mk = y+'-'+m;
-    if (!byMonth[mk]) byMonth[mk] = {bruto:0,netto:0,cost:0,gp:0};
+    const entityName = DATA.entities[r[R_ENTITY]] || '';
+    const biayaCabangVal = (BIAYA_CABANG[entityName] && BIAYA_CABANG[entityName][mk]) || 0;
+    if (!byMonth[mk]) byMonth[mk] = {bruto:0,netto:0,cost:0,gp:0,insentif:INSENTIF_BY_MONTH[mk]||0,biayaCabang:0,_cabangEntitiesSeen:{}};
     byMonth[mk].bruto += bruto; byMonth[mk].netto += netto; byMonth[mk].cost += cost; byMonth[mk].gp += gp;
-    if (!byYear[y]) byYear[y] = {bruto:0,netto:0,cost:0,gp:0};
+    // biayaCabang: accumulate once per entity per month (not per SO row)
+    if (entityName && !byMonth[mk]._cabangEntitiesSeen[entityName]) {
+      byMonth[mk]._cabangEntitiesSeen[entityName] = true;
+      byMonth[mk].biayaCabang += biayaCabangVal;
+    }
+    if (!byYear[y]) byYear[y] = {bruto:0,netto:0,cost:0,gp:0,insentif:0,biayaCabang:0};
     byYear[y].bruto += bruto; byYear[y].netto += netto; byYear[y].cost += cost; byYear[y].gp += gp;
+  });
+  // Accumulate yearly insentif and biayaCabang from monthly (period costs, set once per entity/month).
+  Object.entries(byMonth).forEach(([mk, mdata]) => {
+    const y = parseInt(mk.split('-')[0]);
+    if (byYear[y]) {
+      byYear[y].insentif += mdata.insentif;
+      byYear[y].biayaCabang += (mdata.biayaCabang||0);
+    }
   });
   return { byMonth, byYear };
 }
@@ -5510,6 +5531,13 @@ function renderLabaRugiHtml(viewKey, cfg, filteredRows) {
     { key:'costRatio', label:'% terhadap Bruto', isRatio:true, sub:true },
     { key:'gp',    label:'GP (Gross Profit)', isRatio:false, bold:true },
     { key:'gpRatio', label:'GP Margin (% terhadap Bruto)', isRatio:true, sub:true },
+    { key:'_grp', label:'Biaya Variabel', isRatio:false, groupHeader:true },
+    { key:'insentif', label:'Insentif Sales', isRatio:false, sub:true },
+    { key:'biayaCabang', label:'Biaya Cabang', isRatio:false, sub:true },
+    { key:'totalBiayaVariabel', label:'Total Biaya Variabel', isRatio:false, bold:true },
+    { key:'totalBiayaVariabelRatio', label:'% Biaya Variabel terhadap Bruto', isRatio:true, sub:true },
+    { key:'gpAfterCabang', label:'GP Setelah Biaya Variabel', isRatio:false, bold:true },
+    { key:'gpAfterCabangRatio', label:'GP Margin Setelah Biaya Variabel (% Bruto)', isRatio:true, sub:true },
   ];
 
   function valueForKey(key, d) {
@@ -5523,23 +5551,37 @@ function renderLabaRugiHtml(viewKey, cfg, filteredRows) {
       case 'costRatio': return d.bruto !== 0 ? (d.cost/d.bruto*100) : 0;
       case 'gp': return d.gp;
       case 'gpRatio': return d.bruto !== 0 ? (d.gp/d.bruto*100) : 0;
+      case 'insentif': return d.insentif||0;
+      case 'insentifRatio': return d.bruto !== 0 ? ((d.insentif||0)/d.bruto*100) : 0;
+      case 'gpAfterInsentif': return d.gp - (d.insentif||0);
+      case 'gpAfterInsentifRatio': return d.bruto !== 0 ? ((d.gp-(d.insentif||0))/d.bruto*100) : 0;
+      case 'biayaCabang': return d.biayaCabang||0;
+      case 'totalBiayaVariabel': return (d.insentif||0) + (d.biayaCabang||0);
+      case 'totalBiayaVariabelRatio': return d.bruto !== 0 ? (((d.insentif||0)+(d.biayaCabang||0))/d.bruto*100) : 0;
+      case 'gpAfterCabang': return d.gp - (d.insentif||0) - (d.biayaCabang||0);
+      case 'gpAfterCabangRatio': return d.bruto !== 0 ? ((d.gp-(d.insentif||0)-(d.biayaCabang||0))/d.bruto*100) : 0;
       default: return 0;
     }
   }
 
   function buildRowCells(periods, dataMap, getKey) {
     return rowDefs.map(rd => {
+      if (rd.groupHeader) {
+        const colSpan = periods.length + 2;
+        return `<tr><td colspan="${colSpan}" style="padding:8px 10px 4px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-faint);background:var(--panel-2);border-top:1px solid var(--line);">${rd.label}</td></tr>`;
+      }
       const cells = periods.map(p => {
-        const d = dataMap[getKey(p)] || {bruto:0,netto:0,cost:0,gp:0};
+        const d = dataMap[getKey(p)] || {bruto:0,netto:0,cost:0,gp:0,insentif:0,biayaCabang:0};
         const val = valueForKey(rd.key, d);
         const display = rd.isRatio ? `${val.toFixed(1)}%` : fmtRp(val, {compact:true});
         const negCls = (rd.isRatio && val < 0) ? ' class="ratio-cell neg"' : (rd.isRatio ? ' class="ratio-cell"' : '');
         return `<td${negCls}${rd.bold?' style="font-weight:700;"':''}>${display}</td>`;
       }).join('');
-      const totalAgg = { bruto:0, netto:0, cost:0, gp:0 };
+      if (rd.groupHeader) return '';
+      const totalAgg = { bruto:0, netto:0, cost:0, gp:0, insentif:0, biayaCabang:0 };
       periods.forEach(p => {
-        const d = dataMap[getKey(p)] || {bruto:0,netto:0,cost:0,gp:0};
-        totalAgg.bruto += d.bruto; totalAgg.netto += d.netto; totalAgg.cost += d.cost; totalAgg.gp += d.gp;
+        const d = dataMap[getKey(p)] || {bruto:0,netto:0,cost:0,gp:0,insentif:0,biayaCabang:0};
+        totalAgg.bruto += d.bruto; totalAgg.netto += d.netto; totalAgg.cost += d.cost; totalAgg.gp += d.gp; totalAgg.insentif += (d.insentif||0); totalAgg.biayaCabang += (d.biayaCabang||0);
       });
       const totalVal = valueForKey(rd.key, totalAgg);
       const totalDisplay = rd.isRatio ? `${totalVal.toFixed(1)}%` : fmtRp(totalVal, {compact:true});
