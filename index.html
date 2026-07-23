@@ -3025,6 +3025,22 @@
         <div class="chart-wrap"><canvas id="arAgingBarChart"></canvas></div>
       </div>
     </div>
+    <div class="panel" style="margin-top:16px;">
+      <div class="legend-row" style="margin-bottom:10px;">
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--gold)"></span>Aging Piutang berdasarkan Sisa Hari Jatuh Tempo</div>
+      </div>
+      <table style="width:100%;">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Kategori</th>
+            <th style="text-align:right;">Outstanding</th>
+            <th style="text-align:right;width:70px;">Item</th>
+            <th style="text-align:right;width:60px;">%</th>
+          </tr>
+        </thead>
+        <tbody id="arDuedateAgingBody"></tbody>
+      </table>
+    </div>
     <div class="insight-single" id="insightArDuedateAging">
       <div class="tag">Analisis</div>
       <div class="txt"></div>
@@ -3238,7 +3254,7 @@
       </div>
       <div class="ar-modal-kpi" id="arItemModalKpi"></div>
       <div class="ar-modal-table-wrap">
-        <table class="ar-modal-table">
+        <table class="ar-modal-table" id="arItemModalTable">
           <thead><tr id="arItemModalHead"></tr></thead>
           <tbody id="arItemModalBody"></tbody>
         </table>
@@ -3377,7 +3393,7 @@
       </div>
       <div class="ar-modal-kpi" id="arMgmtModalKpi"></div>
       <div class="ar-modal-table-wrap">
-        <table class="ar-modal-table">
+        <table class="ar-modal-table" id="arMgmtModalTable">
           <thead><tr id="arMgmtModalHead"></tr></thead>
           <tbody id="arMgmtModalBody"></tbody>
         </table>
@@ -3658,7 +3674,7 @@
       </div>
       <div class="ap-modal-kpi" id="apItemModalKpi"></div>
       <div class="ap-modal-table-wrap">
-        <table class="ap-modal-table">
+        <table class="ap-modal-table" id="apItemModalTable">
           <thead><tr id="apItemModalHead"></tr></thead>
           <tbody id="apItemModalBody"></tbody>
         </table>
@@ -7486,6 +7502,72 @@ function openArDuedateDetail(status, filtered) {
   arItemModalOverlay.classList.add('open');
 }
 
+// ===== Aging Piutang berdasarkan Sisa Hari Jatuh Tempo (below the due-date donut) =====
+const DUEDATE_AGING_BUCKETS = [
+  { key: 'gt14_7',  label: '> 14 s.d 7 Hari Lagi', color: '#7CA582' },
+  { key: 'gt7_3',   label: '> 7 s.d 3 Hari Lagi',  color: '#DDBE8C' },
+  { key: 'sisa1',   label: 'Sisa 1-3 Hari',        color: '#D9A28B' },
+  { key: 'over',    label: 'Due Date Over',         color: '#C97A6B' },
+];
+
+function classifyDuedateAgingBucket(dueDate, todayStr) {
+  if (!dueDate) return null;
+  const today = new Date(todayStr+'T00:00:00');
+  const due = new Date(dueDate+'T00:00:00');
+  const daysDiff = Math.round((due - today) / (1000*60*60*24));
+  if (daysDiff < 0) return 'over';
+  if (daysDiff <= 3) return 'sisa1';
+  if (daysDiff <= 7) return 'gt7_3';
+  if (daysDiff <= 14) return 'gt14_7';
+  return null; // > 14 hari lagi: di luar cakupan 4 kategori ini
+}
+
+function renderArDuedateAging(filtered) {
+  const today = ARMODAL_TODAY_DONUT;
+  const totals = {}, counts = {};
+  DUEDATE_AGING_BUCKETS.forEach(b => { totals[b.key] = 0; counts[b.key] = 0; });
+  filtered.forEach(it => {
+    const bucket = classifyDuedateAgingBucket(it.due_date, today);
+    if (!bucket) return;
+    totals[bucket] += it.nominal;
+    counts[bucket] += 1;
+  });
+  const grandTotal = DUEDATE_AGING_BUCKETS.reduce((s,b)=>s+totals[b.key], 0) || 1;
+
+  const body = document.getElementById('arDuedateAgingBody');
+  if (!body) return;
+  body.innerHTML = DUEDATE_AGING_BUCKETS.map(b => `
+    <tr style="cursor:pointer;" data-duedateaging="${b.key}">
+      <td style="padding:6px 0;"><span class="legend-swatch" style="background:${b.color};display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;"></span>${b.label}</td>
+      <td style="text-align:right;font-weight:600;">${arFmtRp(totals[b.key])}</td>
+      <td style="text-align:right;color:var(--ink-faint);">${counts[b.key]}</td>
+      <td style="text-align:right;color:var(--ink-faint);">${(totals[b.key]/grandTotal*100).toFixed(1)}%</td>
+    </tr>
+  `).join('');
+  document.querySelectorAll('#dash-ar #arDuedateAgingBody tr').forEach(tr => {
+    tr.addEventListener('click', () => openArDuedateAgingDetail(tr.dataset.duedateaging, filtered));
+  });
+}
+
+function openArDuedateAgingDetail(bucketKey, filtered) {
+  const bucket = DUEDATE_AGING_BUCKETS.find(b => b.key === bucketKey);
+  const items = filtered.filter(it => classifyDuedateAgingBucket(it.due_date, ARMODAL_TODAY_DONUT) === bucketKey);
+  if (!items.length) return;
+  const total = items.reduce((s,it)=>s+it.nominal, 0);
+
+  arItemModalTitle.textContent = `Aging Piutang: ${bucket.label}`;
+  arItemModalSub.textContent = `${items.length} item · mengikuti filter aktif`;
+
+  arItemModalKpi.innerHTML = `
+    <div class="ar-modal-kpi-item"><div class="lbl">Total Outstanding</div><div class="val">${arFmtRp(total,{compact:true})}</div></div>
+    <div class="ar-modal-kpi-item"><div class="lbl">Jumlah Item</div><div class="val">${items.length}</div></div>
+    <div class="ar-modal-kpi-item"><div class="lbl">Kategori</div><div class="val" style="color:${bucket.color};">${bucket.label}</div></div>
+  `;
+
+  renderArModalTable(items, true);
+  arItemModalOverlay.classList.add('open');
+}
+
 // ===== Forecast Jatuh Tempo donut (clickable) =====
 let arForecastDonutChart = null;
 const FORECAST_BUCKETS = [
@@ -7806,6 +7888,7 @@ function renderAll() {
 
   renderKpi(filtered);
   renderArDuedateDonut(filtered);
+  renderArDuedateAging(filtered);
   renderArForecastDonut(filtered);
   renderArAgingBarChart(filtered);
   renderCustomerSwipe(lamaCustomers, 'arLamaTrack', 'arLamaDots', 'arLamaPrev', 'arLamaNext', 'arLamaCounter', { get page(){return arLamaPage;}, set page(v){arLamaPage=v;} }, 'Piutang Lama');
@@ -8013,13 +8096,14 @@ function renderArModalTable(items, showCustomer) {
     const isOverdue = it.due_date && it.due_date < ARMODAL_TODAY;
     return `<tr class="${isOverdue ? 'overdue' : ''}">
       ${showCustomer ? `<td>${it.customer}</td>` : ''}
-      <td>${fmtDateID(it.effective_date)}</td>
+      <td data-sort-value="${it.effective_date||''}">${fmtDateID(it.effective_date)}</td>
       <td>${it.so || '—'}</td>
       <td>${it.entitas}</td>
-      <td class="num">${arFmtRp(it.nominal)}</td>
-      <td>${fmtDateID(it.due_date)}${isOverdue ? ' ⚠' : ''}</td>
+      <td class="num" data-sort-value="${it.nominal}">${arFmtRp(it.nominal)}</td>
+      <td data-sort-value="${it.due_date||''}">${fmtDateID(it.due_date)}${isOverdue ? ' ⚠' : ''}</td>
     </tr>`;
   }).join('');
+  if (window.makeSortableTable) window.makeSortableTable('arItemModalTable');
 }
 
 document.getElementById('arItemModalClose').addEventListener('click', () => arItemModalOverlay.classList.remove('open'));
@@ -8363,13 +8447,14 @@ function renderApModalTable(items, showVendor) {
     const isOverdue = it.due_date && it.due_date < APMODAL_TODAY;
     return `<tr class="${isOverdue ? 'overdue' : ''}">
       ${showVendor ? `<td>${it.vendor}</td>` : ''}
-      <td>${fmtDateID(it.effective_date)}</td>
+      <td data-sort-value="${it.effective_date||''}">${fmtDateID(it.effective_date)}</td>
       <td>${it.ref || '—'}</td>
       <td>${it.entitas || '—'}</td>
-      <td class="num">${apFmtRp(it.nominal)}</td>
-      <td>${fmtDateID(it.due_date)}${isOverdue ? ' ⚠' : ''}</td>
+      <td class="num" data-sort-value="${it.nominal}">${apFmtRp(it.nominal)}</td>
+      <td data-sort-value="${it.due_date||''}">${fmtDateID(it.due_date)}${isOverdue ? ' ⚠' : ''}</td>
     </tr>`;
   }).join('');
+  if (window.makeSortableTable) window.makeSortableTable('apItemModalTable');
 }
 
 document.getElementById('apItemModalClose').addEventListener('click', () => apItemModalOverlay.classList.remove('open'));
@@ -11468,11 +11553,12 @@ if (AP_ITEMS && AP_ITEMS.length) {
         <td>${type==='customer'?'':it.customer}</td>
         <td>${type==='sales'?'':it.sales}</td>
         <td>${type==='cabang'?'':it.entitas}</td>
-        <td style="text-align:right;font-family:var(--mono);">${fmtRpAm(it.nominal)}</td>
-        <td style="text-align:right;font-family:var(--mono);color:${dlColor};font-weight:600;">${dlLabel}</td>
-        <td style="text-align:right;font-family:var(--mono);color:var(--ink-faint);">${it.due_date || '—'}</td>
+        <td style="text-align:right;font-family:var(--mono);" data-sort-value="${it.nominal}">${fmtRpAm(it.nominal)}</td>
+        <td style="text-align:right;font-family:var(--mono);color:${dlColor};font-weight:600;" data-sort-value="${dl===null?'':dl}">${dlLabel}</td>
+        <td style="text-align:right;font-family:var(--mono);color:var(--ink-faint);" data-sort-value="${it.due_date||''}">${it.due_date || '—'}</td>
       </tr>`;
     }).join('');
+    if (window.makeSortableTable) window.makeSortableTable('arMgmtModalTable');
     if (mgmtModalOverlay) mgmtModalOverlay.classList.add('open');
   }
 
